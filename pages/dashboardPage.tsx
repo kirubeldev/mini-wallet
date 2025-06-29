@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { useWalletStore } from "@/store/wallet-store"
 import Layout from "@/components/Layout"
-import TransferModal from "@/components/TransferModel"
+import TransferModal from "@/components/TransferModal"
 import Toast from "@/components/Toast"
 import { EyeIcon, EyeSlashIcon, PlusIcon, ExclamationTriangleIcon } from "@heroicons/react/24/outline"
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend } from "recharts"

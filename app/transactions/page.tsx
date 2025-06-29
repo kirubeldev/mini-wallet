@@ -17,7 +17,7 @@ import {
 import { truncateText } from "@/lib/utils"
 
 export default function Transactions() {
-  const { transactions, accounts, transfer, transferToExternal, user, externalUsers } = useWalletStore()
+  const { transactions, wallets, transfer, transferToExternal, user, externalUsers } = useWalletStore()
   const [searchTerm, setSearchTerm] = useState("")
   const [filterStatus, setFilterStatus] = useState("all")
   const [filterType, setFilterType] = useState("all")
@@ -26,32 +26,30 @@ export default function Transactions() {
   const [currentPage, setCurrentPage] = useState(1)
   const [showTransferModal, setShowTransferModal] = useState(false)
   const [transferData, setTransferData] = useState({
-    fromAccount: "",
-    toAccount: "",
+    fromWallet: "",
+    toWallet: "",
     externalUser: "",
     transferType: "internal", // "internal" or "external"
     amount: "",
     reason: "",
     password: "",
   })
-  const [transferError, setTransferError] = useState("")
-  const [transferLoading, setTransferLoading] = useState(false)
 
   const itemsPerPage = 10
 
-  const getAccountName = (accountId: string) => {
-    const account = accounts.find((acc) => acc.id === accountId)
-    return account ? account.name : "Unknown Account"
+  const getWalletName = (walletId: string) => {
+    const wallet = wallets.find((w) => w.id === walletId)
+    return wallet ? wallet.name : "Unknown Wallet"
   }
 
   const filteredTransactions = transactions
     .filter((transaction) => {
       const matchesSearch =
         transaction.reason?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        getAccountName(transaction.fromAccount || "")
+        getWalletName(transaction.fromWallet || "")
           .toLowerCase()
           .includes(searchTerm.toLowerCase()) ||
-        getAccountName(transaction.toAccount || "")
+        getWalletName(transaction.toWallet || "")
           .toLowerCase()
           .includes(searchTerm.toLowerCase())
 
@@ -117,63 +115,31 @@ export default function Transactions() {
 
   const handleTransfer = async (e: React.FormEvent) => {
     e.preventDefault()
-    setTransferLoading(true)
-    setTransferError("")
 
-    try {
-      const amount = Number.parseFloat(transferData.amount)
-      if (isNaN(amount) || amount <= 0) {
-        setTransferError("Please enter a valid amount")
-        return
-      }
+    const amount = Number.parseFloat(transferData.amount)
 
-      let result
-
-      if (transferData.transferType === "external") {
-        if (!transferData.externalUser) {
-          setTransferError("Please select a recipient")
-          return
-        }
-        result = await transferToExternal(
-          transferData.fromAccount,
-          transferData.externalUser,
-          amount,
-          transferData.reason,
-          transferData.password,
-        )
-      } else {
-        if (transferData.fromAccount === transferData.toAccount) {
-          setTransferError("Cannot transfer to the same account")
-          return
-        }
-        result = await transfer(
-          transferData.fromAccount,
-          transferData.toAccount,
-          amount,
-          transferData.reason,
-          transferData.password,
-        )
-      }
-
-      if (result.success) {
-        setShowTransferModal(false)
-        setTransferData({
-          fromAccount: "",
-          toAccount: "",
-          externalUser: "",
-          transferType: "internal",
-          amount: "",
-          reason: "",
-          password: "",
-        })
-      } else {
-        setTransferError(result.message)
-      }
-    } catch (error) {
-      setTransferError("An error occurred during transfer")
-    } finally {
-      setTransferLoading(false)
+    if (transferData.transferType === "external") {
+      await transferToExternal(
+        transferData.fromWallet,
+        transferData.externalUser,
+        amount,
+        transferData.reason,
+        transferData.password,
+      )
+    } else {
+      await transfer(transferData.fromWallet, transferData.toWallet, amount, transferData.reason, transferData.password)
     }
+
+    setShowTransferModal(false)
+    setTransferData({
+      fromWallet: "",
+      toWallet: "",
+      externalUser: "",
+      transferType: "internal",
+      amount: "",
+      reason: "",
+      password: "",
+    })
   }
 
   return (
@@ -185,19 +151,8 @@ export default function Transactions() {
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Transactions</h1>
             <p className="text-gray-600 dark:text-gray-400">View and manage your transaction history</p>
           </div>
-          <Button onClick={() => setShowTransferModal(true)} disabled={user?.kycStatus !== "approved"}>
-            Transfer Money
-          </Button>
+          <Button onClick={() => setShowTransferModal(true)}>Transfer Money</Button>
         </div>
-
-        {/* KYC Alert */}
-        {user?.kycStatus !== "approved" && (
-          <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-700 rounded-lg p-4">
-            <p className="text-orange-800 dark:text-orange-200">
-              ⚠️ KYC verification required to make transfers. Please complete your verification first.
-            </p>
-          </div>
-        )}
 
         {/* Filters and Search */}
         <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
@@ -282,8 +237,8 @@ export default function Transactions() {
                         ))}
                     </div>
                   </TableHead>
-                  <TableHead>From Account</TableHead>
-                  <TableHead>To Account</TableHead>
+                  <TableHead>From Wallet</TableHead>
+                  <TableHead>To Wallet</TableHead>
                   <TableHead
                     className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
                     onClick={() => handleSort("amount")}
@@ -320,8 +275,8 @@ export default function Transactions() {
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell>{transaction.fromAccount ? getAccountName(transaction.fromAccount) : "-"}</TableCell>
-                      <TableCell>{transaction.toAccount ? getAccountName(transaction.toAccount) : "-"}</TableCell>
+                      <TableCell>{transaction.fromWallet ? getWalletName(transaction.fromWallet) : "-"}</TableCell>
+                      <TableCell>{transaction.toWallet ? getWalletName(transaction.toWallet) : "-"}</TableCell>
                       <TableCell>
                         <div>
                           <div className="font-medium">
@@ -433,23 +388,22 @@ export default function Transactions() {
                 onChange={(e) => setTransferData({ ...transferData, transferType: e.target.value })}
                 className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
               >
-                <option value="internal">Between My Accounts</option>
+                <option value="internal">Between My Wallets</option>
                 <option value="external">To Other Users</option>
               </select>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">From Account</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">From Wallet</label>
               <select
-                value={transferData.fromAccount}
-                onChange={(e) => setTransferData({ ...transferData, fromAccount: e.target.value })}
+                value={transferData.fromWallet}
+                onChange={(e) => setTransferData({ ...transferData, fromWallet: e.target.value })}
                 className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                required
               >
-                <option value="">Select account</option>
-                {accounts.map((account) => (
-                  <option key={account.id} value={account.id}>
-                    {account.name} - {account.balance} {account.currency}
+                <option value="">Select wallet</option>
+                {wallets.map((wallet) => (
+                  <option key={wallet.id} value={wallet.id}>
+                    {wallet.name} - {wallet.balance} {wallet.currency}
                   </option>
                 ))}
               </select>
@@ -457,19 +411,18 @@ export default function Transactions() {
 
             {transferData.transferType === "internal" ? (
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">To Account</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">To Wallet</label>
                 <select
-                  value={transferData.toAccount}
-                  onChange={(e) => setTransferData({ ...transferData, toAccount: e.target.value })}
+                  value={transferData.toWallet}
+                  onChange={(e) => setTransferData({ ...transferData, toWallet: e.target.value })}
                   className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  required
                 >
-                  <option value="">Select account</option>
-                  {accounts
-                    .filter((acc) => acc.id !== transferData.fromAccount)
-                    .map((account) => (
-                      <option key={account.id} value={account.id}>
-                        {account.name} - {account.balance} {account.currency}
+                  <option value="">Select wallet</option>
+                  {wallets
+                    .filter((w) => w.id !== transferData.fromWallet)
+                    .map((wallet) => (
+                      <option key={wallet.id} value={wallet.id}>
+                        {wallet.name} - {wallet.balance} {wallet.currency}
                       </option>
                     ))}
                 </select>
@@ -481,12 +434,11 @@ export default function Transactions() {
                   value={transferData.externalUser}
                   onChange={(e) => setTransferData({ ...transferData, externalUser: e.target.value })}
                   className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  required
                 >
                   <option value="">Select recipient</option>
                   {externalUsers.map((user) => (
                     <option key={user.id} value={user.id}>
-                      {user.name} - {user.bankName} ({user.type})
+                      {user.name} - {user.bankName}
                     </option>
                   ))}
                 </select>
@@ -501,7 +453,6 @@ export default function Transactions() {
                 value={transferData.amount}
                 onChange={(e) => setTransferData({ ...transferData, amount: e.target.value })}
                 className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                required
               />
             </div>
 
@@ -517,56 +468,20 @@ export default function Transactions() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Confirm Password</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Password</label>
               <input
                 type="password"
                 value={transferData.password}
                 onChange={(e) => setTransferData({ ...transferData, password: e.target.value })}
                 className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                placeholder="Enter password123 for demo"
-                required
               />
             </div>
-
-            {/* Service Charge Info */}
-            {transferData.amount && (
-              <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-md">
-                <div className="flex justify-between text-sm">
-                  <span>Amount:</span>
-                  <span>{transferData.amount} ETB</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span>Service Charge ({transferData.transferType === "external" ? "2%" : "1%"}):</span>
-                  <span>
-                    {(
-                      Number.parseFloat(transferData.amount || "0") *
-                      (transferData.transferType === "external" ? 0.02 : 0.01)
-                    ).toFixed(2)}{" "}
-                    ETB
-                  </span>
-                </div>
-                <div className="flex justify-between text-sm font-medium border-t pt-2 mt-2">
-                  <span>Total:</span>
-                  <span>
-                    {(
-                      Number.parseFloat(transferData.amount || "0") *
-                      (1 + (transferData.transferType === "external" ? 0.02 : 0.01))
-                    ).toFixed(2)}{" "}
-                    ETB
-                  </span>
-                </div>
-              </div>
-            )}
-
-            {transferError && <div className="text-red-600 text-sm">{transferError}</div>}
 
             <div className="flex justify-end space-x-3">
               <Button type="button" variant="outline" onClick={() => setShowTransferModal(false)}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={transferLoading}>
-                {transferLoading ? "Processing..." : "Transfer"}
-              </Button>
+              <Button type="submit">Transfer</Button>
             </div>
           </form>
         </DialogContent>

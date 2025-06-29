@@ -6,7 +6,6 @@ import { useWalletStore } from "@/store/wallet-store"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Info } from "lucide-react"
 
 export default function Register() {
   const { register } = useWalletStore()
@@ -20,41 +19,14 @@ export default function Register() {
     theme: "dark" as "light" | "dark",
     minBalance: "100",
   })
-  const [errors, setErrors] = useState<Record<string, string>>({})
-
-  const validateForm = () => {
-    const newErrors: Record<string, string> = {}
-
-    if (!formData.firstName.trim()) newErrors.firstName = "First name is required"
-    if (!formData.lastName.trim()) newErrors.lastName = "Last name is required"
-    if (!formData.email.trim()) newErrors.email = "Email is required"
-    else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = "Email is invalid"
-    if (!formData.password) newErrors.password = "Password is required"
-    else if (formData.password.length < 6) newErrors.password = "Password must be at least 6 characters"
-
-    const minBalanceNum = Number.parseFloat(formData.minBalance)
-    if (isNaN(minBalanceNum) || minBalanceNum < 100) {
-      newErrors.minBalance = "Minimum balance alert must be at least 100."
-    }
-
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-
-    if (!validateForm()) return
-
-    try {
-      register({
-        ...formData,
-        minBalance: Number.parseFloat(formData.minBalance),
-      })
-      router.push("/kyc")
-    } catch (error) {
-      setErrors({ general: "Registration failed. Please try again." })
-    }
+    register({
+      ...formData,
+      minBalance: Number.parseFloat(formData.minBalance),
+    })
+    router.push("/dashboard")
   }
 
   return (
@@ -81,7 +53,6 @@ export default function Register() {
                   onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
                   className="mt-1 block w-full px-3 py-3 rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                 />
-                {errors.firstName && <p className="mt-1 text-sm text-red-600">{errors.firstName}</p>}
               </div>
 
               <div>
@@ -95,7 +66,6 @@ export default function Register() {
                   onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
                   className="mt-1 block w-full px-3 py-3 rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                 />
-                {errors.lastName && <p className="mt-1 text-sm text-red-600">{errors.lastName}</p>}
               </div>
             </div>
 
@@ -110,7 +80,6 @@ export default function Register() {
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 className="mt-1 block w-full px-3 py-3 rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
               />
-              {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email}</p>}
             </div>
 
             <div>
@@ -124,7 +93,6 @@ export default function Register() {
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 className="mt-1 block w-full px-3 py-3 rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
               />
-              {errors.password && <p className="mt-1 text-sm text-red-600">{errors.password}</p>}
             </div>
 
             <div>
@@ -144,18 +112,8 @@ export default function Register() {
             </div>
 
             <div>
-              <label
-                htmlFor="minBalance"
-                className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300"
-              >
+              <label htmlFor="minBalance" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Min Balance Alert
-                <div className="relative group">
-                  <Info className="h-4 w-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 cursor-help" />
-                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 dark:bg-gray-700 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
-                    Get alerts when your balance falls below this amount
-                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900 dark:border-t-gray-700"></div>
-                  </div>
-                </div>
               </label>
               <input
                 id="minBalance"
@@ -166,14 +124,8 @@ export default function Register() {
                 onChange={(e) => setFormData({ ...formData, minBalance: e.target.value })}
                 className="mt-1 block w-full px-3 py-3 rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
               />
-              {errors.minBalance && <p className="mt-1 text-sm text-red-600">{errors.minBalance}</p>}
-              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                You'll receive alerts when your balance falls below this amount (minimum: 100)
-              </p>
             </div>
           </div>
-
-          {errors.general && <div className="text-red-600 text-sm text-center">{errors.general}</div>}
 
           <div>
             <Button type="submit" className="w-full">

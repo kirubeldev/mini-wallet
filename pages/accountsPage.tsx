@@ -5,7 +5,7 @@ import type React from "react"
 import { useState } from "react"
 import { useWalletStore } from "@/store/wallet-store"
 import Layout from "@/components/Layout"
-import TransferModal from "@/components/TransferModel"
+import TransferModal from "@/components/TransferModal"
 import Toast from "@/components/Toast"
 import {
   PlusIcon,

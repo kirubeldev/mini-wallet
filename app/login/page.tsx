@@ -14,26 +14,11 @@ export default function Login() {
     email: "",
     password: "",
   })
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState("")
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setLoading(true)
-    setError("")
-
-    try {
-      const success = await login(formData.email, formData.password)
-      if (success) {
-        router.push("/dashboard")
-      } else {
-        setError("Invalid credentials")
-      }
-    } catch (error) {
-      setError("Login failed. Please try again.")
-    } finally {
-      setLoading(false)
-    }
+    login(formData.email, formData.password)
+    router.push("/dashboard")
   }
 
   return (
@@ -58,7 +43,6 @@ export default function Login() {
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 className="mt-1 block w-full px-3 py-3 rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                required
               />
             </div>
 
@@ -72,16 +56,13 @@ export default function Login() {
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 className="mt-1 block w-full px-3 py-3 rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                required
               />
             </div>
           </div>
 
-          {error && <div className="text-red-600 text-sm text-center">{error}</div>}
-
           <div>
-            <Button type="submit" disabled={loading} className="w-full">
-              {loading ? "Signing in..." : "Sign in"}
+            <Button type="submit" className="w-full">
+              Sign in
             </Button>
           </div>
 

@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import {
   HomeIcon,
-  CreditCardIcon,
+  WalletIcon,
   ArrowsRightLeftIcon,
   DocumentCheckIcon,
   Cog6ToothIcon,
@@ -34,7 +34,7 @@ export default function Layout({ children }: LayoutProps) {
 
   const navigation = [
     { name: "Dashboard", href: "/dashboard", icon: HomeIcon },
-    { name: "Accounts", href: "/accounts", icon: CreditCardIcon },
+    { name: "Wallets", href: "/wallets", icon: WalletIcon },
     { name: "Transactions", href: "/transactions", icon: ArrowsRightLeftIcon },
     { name: "KYC", href: "/kyc", icon: DocumentCheckIcon },
     { name: "Settings", href: "/settings", icon: Cog6ToothIcon },
@@ -44,7 +44,13 @@ export default function Layout({ children }: LayoutProps) {
     if (user) {
       const newTheme = user.theme === "light" ? "dark" : "light"
       updateUser({ theme: newTheme })
-      document.documentElement.classList.toggle("dark", newTheme === "dark")
+
+      // Immediately apply theme change
+      if (newTheme === "dark") {
+        document.documentElement.classList.add("dark")
+      } else {
+        document.documentElement.classList.remove("dark")
+      }
     }
   }
 
@@ -53,6 +59,7 @@ export default function Layout({ children }: LayoutProps) {
     router.push("/login")
   }
 
+  // Apply theme on mount and when user theme changes
   useEffect(() => {
     if (user?.theme === "dark") {
       document.documentElement.classList.add("dark")
@@ -133,14 +140,21 @@ export default function Layout({ children }: LayoutProps) {
         {/* Header */}
         <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
           <div className="flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
-            <button className="lg:hidden" onClick={() => setSidebarOpen(true)}>
-              <Bars3Icon className="h-6 w-6 text-gray-500" />
-            </button>
+            {/* Left side - Mobile menu button */}
+            <div className="flex items-center">
+              <button className="lg:hidden" onClick={() => setSidebarOpen(true)}>
+                <Bars3Icon className="h-6 w-6 text-gray-500" />
+              </button>
+              {/* Empty div for spacing on desktop */}
+              <div className="hidden lg:block"></div>
+            </div>
 
-            <div className="flex items-center space-x-4">
+            {/* Right side - Theme toggle and User menu */}
+            <div className="flex items-center space-x-4 ml-auto">
               <button
                 onClick={toggleTheme}
-                className="p-2 rounded-md text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
+                className="p-2 rounded-md text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors"
+                title={`Switch to ${user.theme === "light" ? "dark" : "light"} mode`}
               >
                 {user.theme === "light" ? <MoonIcon className="h-5 w-5" /> : <SunIcon className="h-5 w-5" />}
               </button>
@@ -149,7 +163,7 @@ export default function Layout({ children }: LayoutProps) {
               <div className="relative">
                 <button
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
-                  className="flex items-center space-x-3 p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
+                  className="flex items-center space-x-3 p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                 >
                   {user.profileImage ? (
                     <img

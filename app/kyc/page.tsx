@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useWalletStore } from "@/store/wallet-store"
 import { useRouter } from "next/navigation"
 import Layout from "@/components/Layout"
@@ -9,8 +9,11 @@ import { Button } from "@/components/ui/button"
 import { CheckCircleIcon, XCircleIcon, ClockIcon, ExclamationTriangleIcon } from "@heroicons/react/24/outline"
 
 export default function KYC() {
-  const { user, updateUser } = useWalletStore()
-  const router = useRouter()
+
+
+
+    const router = useRouter()
+  const { user, updateUser, addWallet } = useWalletStore()
   const [formData, setFormData] = useState({
     fullName: user?.kycData?.fullName || "",
     documentType: user?.kycData?.documentType || "national_id",
@@ -20,6 +23,7 @@ export default function KYC() {
     address: user?.kycData?.address || "",
     country: user?.kycData?.country || "",
     photoUrl: user?.kycData?.photoUrl || "",
+    initialBalance: user?.kycData?.initialBalance || 0,
   })
   const [showProcessingDialog, setShowProcessingDialog] = useState(false)
   const [showApprovedDialog, setShowApprovedDialog] = useState(false)
@@ -43,13 +47,6 @@ export default function KYC() {
     }
   }
 
-  // Redirect if already approved
-  useEffect(() => {
-    if (user?.kycStatus === "approved") {
-      router.push("/dashboard")
-    }
-  }, [user?.kycStatus, router])
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitted(true)
@@ -66,8 +63,16 @@ export default function KYC() {
 
     setTimeout(() => {
       setShowProcessingDialog(false)
-      // Auto-approve for demo
+      // Auto-approve for demo and create wallet with initial balance
       updateUser({ kycStatus: "approved" })
+
+      // Create wallet with initial balance from KYC form
+      // Create wallet with initial balance from KYC form
+      addWallet({
+        name: "KYC Approved Wallet",
+        balance: formData.initialBalance,
+        currency: user?.currency || "ETB",
+      })
       setShowApprovedDialog(true)
 
       // Show approved dialog for 3 seconds then redirect
@@ -142,21 +147,6 @@ export default function KYC() {
           </div>
         )}
 
-        {/* Alert for unverified users */}
-        {user?.kycStatus !== "approved" && (
-          <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-700 rounded-lg p-4">
-            <div className="flex">
-              <ExclamationTriangleIcon className="h-5 w-5 text-orange-400 mt-0.5" />
-              <div className="ml-3">
-                <h3 className="text-sm font-medium text-orange-800 dark:text-orange-200">Limited Access</h3>
-                <p className="text-sm text-orange-700 dark:text-orange-300 mt-1">
-                  Please complete KYC verification to unlock transfers and other premium features.
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* KYC Form */}
         <div className="bg-white dark:bg-gray-800 shadow rounded-lg">
           <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
@@ -175,7 +165,6 @@ export default function KYC() {
                     value={formData.fullName}
                     onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
                     className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    required
                   />
                 )}
               </div>
@@ -191,7 +180,6 @@ export default function KYC() {
                     value={formData.documentType}
                     onChange={(e) => setFormData({ ...formData, documentType: e.target.value })}
                     className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    required
                   >
                     {documentTypes.map((type) => (
                       <option key={type.value} value={type.value}>
@@ -214,7 +202,6 @@ export default function KYC() {
                     value={formData.documentNumber}
                     onChange={(e) => setFormData({ ...formData, documentNumber: e.target.value })}
                     className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    required
                   />
                 )}
               </div>
@@ -228,7 +215,6 @@ export default function KYC() {
                     value={formData.gender}
                     onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
                     className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    required
                   >
                     <option value="">Select Gender</option>
                     <option value="male">Male</option>
@@ -250,7 +236,6 @@ export default function KYC() {
                     value={formData.dob}
                     onChange={(e) => setFormData({ ...formData, dob: e.target.value })}
                     className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    required
                   />
                 )}
               </div>
@@ -264,7 +249,6 @@ export default function KYC() {
                     value={formData.country}
                     onChange={(e) => setFormData({ ...formData, country: e.target.value })}
                     className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    required
                   >
                     <option value="">Select Country</option>
                     <option value="ET">Ethiopia</option>
@@ -287,7 +271,25 @@ export default function KYC() {
                   onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                   rows={3}
                   className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  required
+                />
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Initial Balance</label>
+              {isSubmitted ? (
+                <p className="mt-1 text-sm text-gray-900 dark:text-white py-2">
+                  {formData.initialBalance} {user?.currency}
+                </p>
+              ) : (
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={formData.initialBalance}
+                  onChange={(e) => setFormData({ ...formData, initialBalance: Number.parseFloat(e.target.value) || 0 })}
+                  placeholder="Enter initial wallet balance"
+                  className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 />
               )}
             </div>
@@ -310,7 +312,6 @@ export default function KYC() {
                     onChange={(e) => setFormData({ ...formData, photoUrl: e.target.value })}
                     placeholder="https://example.com/photo.jpg"
                     className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    required
                   />
                   {formData.photoUrl && (
                     <div className="mt-2">

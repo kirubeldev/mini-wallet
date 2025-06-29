@@ -13,37 +13,14 @@ export default function Settings() {
     profileImage: user?.profileImage || "",
     minBalance: user?.minBalance?.toString() || "100",
   })
-  const [errors, setErrors] = useState<Record<string, string>>({})
-  const [success, setSuccess] = useState("")
-
-  const validateForm = () => {
-    const newErrors: Record<string, string> = {}
-
-    const minBalanceNum = Number.parseFloat(formData.minBalance)
-    if (isNaN(minBalanceNum) || minBalanceNum < 100) {
-      newErrors.minBalance = "Minimum balance must be at least 100"
-    }
-
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!validateForm()) return
-
-    try {
-      updateUser({
-        profileImage: formData.profileImage,
-        minBalance: Number.parseFloat(formData.minBalance),
-      })
-
-      setSuccess("Settings updated successfully!")
-      setTimeout(() => setSuccess(""), 3000)
-    } catch (error) {
-      setErrors({ general: "Failed to update settings" })
-    }
+    updateUser({
+      profileImage: formData.profileImage,
+      minBalance: Number.parseFloat(formData.minBalance),
+    })
   }
 
   return (
@@ -111,14 +88,10 @@ export default function Settings() {
                   <span className="text-gray-500 dark:text-gray-400 sm:text-sm">{user?.currency || "ETB"}</span>
                 </div>
               </div>
-              {errors.minBalance && <p className="mt-1 text-sm text-red-600">{errors.minBalance}</p>}
               <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                 You'll receive alerts when your balance falls below this amount (minimum: 100)
               </p>
             </div>
-
-            {errors.general && <div className="text-red-600 text-sm">{errors.general}</div>}
-            {success && <div className="text-green-600 text-sm">{success}</div>}
 
             <div className="flex justify-end">
               <Button type="submit">Save Changes</Button>
@@ -197,29 +170,6 @@ export default function Settings() {
                   <p className="text-sm">2024</p>
                 </div>
               </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Security Settings */}
-        <div className="bg-white dark:bg-gray-800 shadow rounded-lg">
-          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white">Security Settings</h3>
-          </div>
-
-          <div className="p-6 space-y-4">
-            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-              <h4 className="text-sm font-medium text-blue-900 dark:text-blue-200">🔒 Demo Security Features</h4>
-              <ul className="mt-2 text-sm text-blue-800 dark:text-blue-300 space-y-1">
-                <li>• Two-factor authentication (2FA)</li>
-                <li>• Password change functionality</li>
-                <li>• Login activity monitoring</li>
-                <li>• Device management</li>
-                <li>• Account recovery options</li>
-              </ul>
-              <p className="mt-2 text-xs text-blue-700 dark:text-blue-400">
-                These features would be implemented in a production environment
-              </p>
             </div>
           </div>
         </div>

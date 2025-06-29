@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useWalletStore } from "@/store/wallet-store"
 import { useRouter } from "next/navigation"
 import Layout from "@/components/Layout"
@@ -13,39 +13,14 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Legend } from "recharts"
 import { truncateText } from "@/lib/utils"
 
 export default function Dashboard() {
-  const { user, accounts, transactions, balanceVisible, toggleBalanceVisibility } = useWalletStore()
+  const { user, wallets, transactions, balanceVisible, toggleBalanceVisibility } = useWalletStore()
   const router = useRouter()
   const [lowBalanceDialog, setLowBalanceDialog] = useState<{
     isOpen: boolean
-    account?: any
+    wallet?: any
   }>({ isOpen: false })
 
-  // Redirect to KYC if not approved
-  useEffect(() => {
-    if (user && user.kycStatus !== "approved") {
-      router.push("/kyc")
-    }
-  }, [user, router])
-
-  // Don't render dashboard content if KYC not approved
-  if (!user || user.kycStatus !== "approved") {
-    return (
-      <Layout>
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="text-center">
-            <ExclamationTriangleIcon className="h-16 w-16 text-yellow-500 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">KYC Verification Required</h2>
-            <p className="text-gray-600 dark:text-gray-400 mb-4">
-              Please complete your KYC verification to access the dashboard.
-            </p>
-            <Button onClick={() => router.push("/kyc")}>Complete KYC</Button>
-          </div>
-        </div>
-      </Layout>
-    )
-  }
-
-  const totalBalance = accounts.reduce((sum, account) => sum + account.balance, 0)
+  const totalBalance = wallets.reduce((sum, wallet) => sum + wallet.balance, 0)
   const isLowBalance = totalBalance < (user?.minBalance || 100)
 
   // Mock expense data for pie chart
@@ -59,9 +34,9 @@ export default function Dashboard() {
 
   const recentTransactions = transactions.slice(0, 5)
 
-  const getAccountName = (accountId: string) => {
-    const account = accounts.find((acc) => acc.id === accountId)
-    return account ? account.name : "Unknown Account"
+  const getWalletName = (walletId: string) => {
+    const wallet = wallets.find((w) => w.id === walletId)
+    return wallet ? wallet.name : "Unknown Wallet"
   }
 
   const getStatusColor = (status: string) => {
@@ -96,9 +71,9 @@ export default function Dashboard() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
-          <Button onClick={() => router.push("/accounts")}>
+          <Button onClick={() => router.push("/wallets")}>
             <PlusIcon className="h-4 w-4 mr-2" />
-            Manage Accounts
+            Manage Wallets
           </Button>
         </div>
 
@@ -233,21 +208,21 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Account Cards */}
+        {/* Wallet Cards */}
         <div className="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
           <div className="p-5">
-            <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-white mb-4">Your Accounts</h3>
+            <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-white mb-4">Your Wallets</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {accounts.map((account) => {
-                const isAccountLowBalance = account.balance < (user?.minBalance || 100)
+              {wallets.map((wallet) => {
+                const isWalletLowBalance = wallet.balance < (user?.minBalance || 100)
                 return (
                   <ATMCard
-                    key={account.id}
-                    account={account}
-                    isLowBalance={isAccountLowBalance}
+                    key={wallet.id}
+                    account={wallet}
+                    isLowBalance={isWalletLowBalance}
                     balanceVisible={balanceVisible}
                     onToggleBalance={toggleBalanceVisibility}
-                    onLowBalanceAlert={() => setLowBalanceDialog({ isOpen: true, account })}
+                    onLowBalanceAlert={() => setLowBalanceDialog({ isOpen: true, wallet })}
                   />
                 )
               })}
@@ -259,10 +234,10 @@ export default function Dashboard() {
       <LowBalanceDialog
         isOpen={lowBalanceDialog.isOpen}
         onClose={() => setLowBalanceDialog({ isOpen: false })}
-        accountName={lowBalanceDialog.account?.name || ""}
-        currentBalance={lowBalanceDialog.account?.balance || 0}
+        accountName={lowBalanceDialog.wallet?.name || ""}
+        currentBalance={lowBalanceDialog.wallet?.balance || 0}
         minBalance={user?.minBalance || 100}
-        currency={lowBalanceDialog.account?.currency || user?.currency || "ETB"}
+        currency={lowBalanceDialog.wallet?.currency || user?.currency || "ETB"}
       />
     </Layout>
   )
