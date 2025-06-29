@@ -1,33 +1,69 @@
-"use client"
+"use client";
 
-import type React from "react"
-import { useState } from "react"
-import { useWalletStore } from "@/store/wallet-store"
-import { useRouter } from "next/navigation"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
+import type React from "react";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { useRegister } from "@/hooks/UseRegisterHooks";
+import { useAuthStore } from "@/store/AuthStore";
+import Toast from "@/components/Toast";
 
+// I have updated the Register page here to use the useRegister hook, store the user and token in the Zustand store, and redirect to /kyc if status is false or /dashboard if true.
 export default function Register() {
-  const { register } = useWalletStore()
-  const router = useRouter()
+  const { register } = useRegister();
+  const { setUser } = useAuthStore();
+  const router = useRouter();
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
     email: "",
     password: "",
-    currency: "ETB",
-    theme: "dark" as "light" | "dark",
-    minBalance: "100",
-  })
+    theme: "light" as "light" | "dark",
+  });
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    register({
-      ...formData,
-      minBalance: Number.parseFloat(formData.minBalance),
-    })
-    router.push("/dashboard")
-  }
+  // I have kept the validateForm function here to check form inputs before sending to the API.
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+
+    if (!formData.firstName.trim()) newErrors.firstName = "First name is required";
+    if (!formData.lastName.trim()) newErrors.lastName = "Last name is required";
+    if (!formData.email.trim()) newErrors.email = "Email is required";
+    else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = "Email is invalid";
+    if (!formData.password) newErrors.password = "Password is required";
+    else if (formData.password.length < 6) newErrors.password = "Password must be at least 6 characters";
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  // I have updated handleSubmit here to use the useRegister hook, store the user and token, and redirect based on status.
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!validateForm()) return;
+
+    try {
+      const userData = await register(formData);
+      // I have stored the registered user and token in the Zustand store here for global access.
+      setUser({
+        id: userData.id,
+        firstname: userData.firstname,
+        lastname: userData.lastname,
+        email: userData.email,
+        theme: userData.theme,
+        token: userData.token,
+      });
+      setToast({ message: "Registration successful!", type: "success" });
+      setTimeout(() => {
+        // I have checked the user status here to redirect to /kyc if pending (false) or /dashboard if approved (true).
+        router.push(userData.status ? "/dashboard" : "/kyc");
+      }, 1000);
+    } catch (error) {
+      setToast({ message: "Registration failed. Please try again.", type: "error" });
+    }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
@@ -51,8 +87,9 @@ export default function Register() {
                   type="text"
                   value={formData.firstName}
                   onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                  className="mt-1 block w-full px-3 py-3 rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                  className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 px-4 py-2"
                 />
+                {errors.firstName && <p className="mt-1 text-sm text-red-600">{errors.firstName}</p>}
               </div>
 
               <div>
@@ -64,8 +101,9 @@ export default function Register() {
                   type="text"
                   value={formData.lastName}
                   onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                  className="mt-1 block w-full px-3 py-3 rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                  className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 px-4 py-2"
                 />
+                {errors.lastName && <p className="mt-1 text-sm text-red-600">{errors.lastName}</p>}
               </div>
             </div>
 
@@ -78,8 +116,9 @@ export default function Register() {
                 type="email"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="mt-1 block w-full px-3 py-3 rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 px-4 py-2"
               />
+              {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email}</p>}
             </div>
 
             <div>
@@ -91,46 +130,34 @@ export default function Register() {
                 type="password"
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                className="mt-1 block w-full px-3 py-3 rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 px-4 py-2"
               />
+              {errors.password && <p className="mt-1 text-sm text-red-600">{errors.password}</p>}
             </div>
 
             <div>
-              <label htmlFor="currency" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Currency
+              <label htmlFor="theme" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Theme
               </label>
               <select
-                id="currency"
-                value={formData.currency}
-                onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
-                className="mt-1 block w-full px-3 py-3 rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                id="theme"
+                value={formData.theme}
+                onChange={(e) => setFormData({ ...formData, theme: e.target.value as "light" | "dark" })}
+                className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 px-4 py-2"
               >
-                <option value="ETB">Ethiopian Birr (ETB)</option>
-                <option value="USD">US Dollar (USD)</option>
-                <option value="EUR">Euro (EUR)</option>
+                <option value="light">Light</option>
+                <option value="dark">Dark</option>
               </select>
-            </div>
-
-            <div>
-              <label htmlFor="minBalance" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Min Balance Alert
-              </label>
-              <input
-                id="minBalance"
-                type="number"
-                step="0.01"
-                min="100"
-                value={formData.minBalance}
-                onChange={(e) => setFormData({ ...formData, minBalance: e.target.value })}
-                className="mt-1 block w-full px-3 py-3 rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-              />
             </div>
           </div>
 
           <div>
-            <Button type="submit" className="w-full">
+            <button
+              type="submit"
+              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            >
               Create Account
-            </Button>
+            </button>
           </div>
 
           <div className="text-center">
@@ -143,6 +170,8 @@ export default function Register() {
           </div>
         </form>
       </div>
+
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </div>
-  )
+  );
 }

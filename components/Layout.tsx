@@ -1,9 +1,9 @@
-"use client"
+"use client";
 
-import type React from "react"
-import { useWalletStore } from "@/store/wallet-store"
-import { useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
+import type React from "react";
+import { useState, useEffect } from "react";
+import { useRouter, usePathname } from "next/navigation";
+import Link from "next/link";
 import {
   HomeIcon,
   WalletIcon,
@@ -16,61 +16,54 @@ import {
   XMarkIcon,
   UserIcon,
   ArrowRightOnRectangleIcon,
-} from "@heroicons/react/24/outline"
-import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { getInitials } from "@/lib/utils"
+} from "@heroicons/react/24/outline";
 
+// I have created a layout component here that provides a side nav and header for all pages, independent of user authentication.
 interface LayoutProps {
-  children: React.ReactNode
+  children: React.ReactNode;
 }
 
 export default function Layout({ children }: LayoutProps) {
-  const { user, logout, updateUser } = useWalletStore()
-  const router = useRouter()
-  const pathname = usePathname()
-  const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [userMenuOpen, setUserMenuOpen] = useState(false)
+  const router = useRouter();
+  const pathname = usePathname();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [theme, setTheme] = useState<"light" | "dark">("light");
 
+  // I have defined the navigation items here for the side nav, consistent across all pages.
   const navigation = [
     { name: "Dashboard", href: "/dashboard", icon: HomeIcon },
     { name: "Wallets", href: "/wallets", icon: WalletIcon },
     { name: "Transactions", href: "/transactions", icon: ArrowsRightLeftIcon },
     { name: "KYC", href: "/kyc", icon: DocumentCheckIcon },
     { name: "Settings", href: "/settings", icon: Cog6ToothIcon },
-  ]
+  ];
 
+  // I have implemented theme toggling here using local state, applying dark/light mode to the document.
   const toggleTheme = () => {
-    if (user) {
-      const newTheme = user.theme === "light" ? "dark" : "light"
-      updateUser({ theme: newTheme })
-
-      // Immediately apply theme change
-      if (newTheme === "dark") {
-        document.documentElement.classList.add("dark")
-      } else {
-        document.documentElement.classList.remove("dark")
-      }
-    }
-  }
-
-  const handleLogout = () => {
-    logout()
-    router.push("/login")
-  }
-
-  // Apply theme on mount and when user theme changes
-  useEffect(() => {
-    if (user?.theme === "dark") {
-      document.documentElement.classList.add("dark")
+    const newTheme = theme === "light" ? "dark" : "light";
+    setTheme(newTheme);
+    if (newTheme === "dark") {
+      document.documentElement.classList.add("dark");
     } else {
-      document.documentElement.classList.remove("dark")
+      document.documentElement.classList.remove("dark");
     }
-  }, [user?.theme])
+  };
 
-  if (!user) {
-    return <div>{children}</div>
-  }
+  // I have added a logout handler here to redirect to /login, assuming no user dependency.
+  const handleLogout = () => {
+    setUserMenuOpen(false);
+    router.push("/login");
+  };
+
+  // I have applied the initial theme on mount here to ensure consistent UI.
+  useEffect(() => {
+    if (theme === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  }, [theme]);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -79,14 +72,14 @@ export default function Layout({ children }: LayoutProps) {
         <div className="fixed inset-0 bg-gray-600 bg-opacity-75" onClick={() => setSidebarOpen(false)} />
         <div className="fixed inset-y-0 left-0 flex w-64 flex-col bg-white dark:bg-gray-800">
           <div className="flex h-16 items-center justify-between px-4">
-            <h1 className="text-xl font-bold text-gray-900 dark:text-white">Mini Wallet</h1>
+            <h1 className="text-xl font-bold text-gray-900 dark:text-white">💰 Mini Wallet</h1>
             <button onClick={() => setSidebarOpen(false)}>
               <XMarkIcon className="h-6 w-6 text-gray-500" />
             </button>
           </div>
           <nav className="flex-1 space-y-1 px-2 py-4">
             {navigation.map((item) => {
-              const isActive = pathname === item.href
+              const isActive = pathname === item.href;
               return (
                 <Link
                   key={item.name}
@@ -101,7 +94,7 @@ export default function Layout({ children }: LayoutProps) {
                   <item.icon className="mr-3 h-6 w-6" />
                   {item.name}
                 </Link>
-              )
+              );
             })}
           </nav>
         </div>
@@ -115,7 +108,7 @@ export default function Layout({ children }: LayoutProps) {
           </div>
           <nav className="flex-1 space-y-1 px-2 py-4">
             {navigation.map((item) => {
-              const isActive = pathname === item.href
+              const isActive = pathname === item.href;
               return (
                 <Link
                   key={item.name}
@@ -129,7 +122,7 @@ export default function Layout({ children }: LayoutProps) {
                   <item.icon className="mr-3 h-6 w-6" />
                   {item.name}
                 </Link>
-              )
+              );
             })}
           </nav>
         </div>
@@ -145,7 +138,6 @@ export default function Layout({ children }: LayoutProps) {
               <button className="lg:hidden" onClick={() => setSidebarOpen(true)}>
                 <Bars3Icon className="h-6 w-6 text-gray-500" />
               </button>
-              {/* Empty div for spacing on desktop */}
               <div className="hidden lg:block"></div>
             </div>
 
@@ -154,9 +146,9 @@ export default function Layout({ children }: LayoutProps) {
               <button
                 onClick={toggleTheme}
                 className="p-2 rounded-md text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors"
-                title={`Switch to ${user.theme === "light" ? "dark" : "light"} mode`}
+                title={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
               >
-                {user.theme === "light" ? <MoonIcon className="h-5 w-5" /> : <SunIcon className="h-5 w-5" />}
+                {theme === "light" ? <MoonIcon className="h-5 w-5" /> : <SunIcon className="h-5 w-5" />}
               </button>
 
               {/* User Menu */}
@@ -165,22 +157,12 @@ export default function Layout({ children }: LayoutProps) {
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
                   className="flex items-center space-x-3 p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                 >
-                  {user.profileImage ? (
-                    <img
-                      src={user.profileImage || "/placeholder.svg"}
-                      alt="Profile"
-                      className="h-8 w-8 rounded-full object-cover"
-                    />
-                  ) : (
-                    <div className="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-medium">
-                      {getInitials(user.firstName, user.lastName)}
-                    </div>
-                  )}
+                  <div className="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-medium">
+                    G
+                  </div>
                   <div className="hidden sm:block text-left">
-                    <p className="text-sm font-medium text-gray-900 dark:text-white">
-                      {user.firstName} {user.lastName}
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">{user.email}</p>
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">Guest</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">guest@example.com</p>
                   </div>
                 </button>
 
@@ -197,10 +179,7 @@ export default function Layout({ children }: LayoutProps) {
                         Profile
                       </Link>
                       <button
-                        onClick={() => {
-                          handleLogout()
-                          setUserMenuOpen(false)
-                        }}
+                        onClick={handleLogout}
                         className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-gray-100 dark:hover:bg-gray-700"
                       >
                         <ArrowRightOnRectangleIcon className="h-4 w-4 mr-3" />
@@ -223,5 +202,5 @@ export default function Layout({ children }: LayoutProps) {
       {/* Click outside to close user menu */}
       {userMenuOpen && <div className="fixed inset-0 z-40" onClick={() => setUserMenuOpen(false)} />}
     </div>
-  )
+  );
 }

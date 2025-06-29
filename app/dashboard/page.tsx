@@ -71,7 +71,7 @@ export default function Dashboard() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
-          <Button onClick={() => router.push("/wallets")}>
+          <Button onClick={() => router.push("/wallet")}>
             <PlusIcon className="h-4 w-4 mr-2" />
             Manage Wallets
           </Button>
