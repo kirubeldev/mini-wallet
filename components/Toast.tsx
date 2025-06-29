@@ -19,7 +19,7 @@ export default function Toast({ message, type, onClose }: ToastProps) {
   }, [onClose])
 
   return (
-    <div className="fixed top-4 right-4 z-50 max-w-sm w-full">
+    <div className="fixed top-4 center z-50 max-w-sm w-full">
       <div
         className={`rounded-lg p-4 shadow-lg ${
           type === "success"

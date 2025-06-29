@@ -1,8 +1,8 @@
 {
   "users": [
     {
-      "id": "9036",
-      "firstname": "kirubel",
+      "id": "9153",
+      "firstname": "minte",
       "lastname": "tekuame",
       "email": "kirubel.menberu@icog.et",
       "password": "mikimikim",
@@ -10,8 +10,60 @@
       "status": false,
       "kycId": null,
       "walletId": null,
-      "token": "token-jxfphopj7-1751215810082",
-      "createdAt": "2025-06-29T16:50:10.082Z"
+      "token": "token-15xdmhtne-1751218084607",
+      "createdAt": "2025-06-29T17:28:04.608Z"
+    },
+    {
+      "id": "46cf",
+      "firstname": "yon",
+      "lastname": "tesnot",
+      "email": "kirubel.menberu@icog.et",
+      "password": "mikimikim",
+      "theme": "light",
+      "status": false,
+      "kycId": null,
+      "walletId": null,
+      "token": "token-dxkieur1u-1751218516485",
+      "createdAt": "2025-06-29T17:35:16.486Z"
+    },
+    {
+      "id": "aaac",
+      "firstname": "yon",
+      "lastname": "minte",
+      "email": "kirubel.menberu@icog.et",
+      "password": "mikimikim",
+      "theme": "light",
+      "status": false,
+      "kycId": null,
+      "walletId": null,
+      "token": "token-i1q395lt6-1751218541862",
+      "createdAt": "2025-06-29T17:35:41.863Z"
+    },
+    {
+      "id": "d283",
+      "firstname": "yon",
+      "lastname": "tekuame",
+      "email": "kirubel.menberu@icog.et5",
+      "password": "mikimikim",
+      "theme": "light",
+      "status": false,
+      "kycId": null,
+      "walletId": null,
+      "token": "token-14je4mfsw-1751218978990",
+      "createdAt": "2025-06-29T17:42:58.991Z"
+    },
+    {
+      "id": "d548",
+      "firstname": "minte",
+      "lastname": "tekuame",
+      "email": "kirubelmenberu35@gmail.com",
+      "password": "123456",
+      "theme": "light",
+      "status": false,
+      "kycId": null,
+      "walletId": null,
+      "token": "token-5sxelfiyl-1751219038048",
+      "createdAt": "2025-06-29T17:43:58.049Z"
     }
   ],
   "wallets": [],

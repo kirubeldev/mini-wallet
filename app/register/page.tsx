@@ -8,7 +8,7 @@ import { useRegister } from "@/hooks/UseRegisterHooks";
 import { useAuthStore } from "@/store/AuthStore";
 import Toast from "@/components/Toast";
 
-// I have updated the Register page here to use the useRegister hook, store the user and token in the Zustand store, and redirect to /kyc if status is false or /dashboard if true.
+// I have updated the Register page to use the useRegister hook, store the user and token in the Zustand store, and redirect to /kyc if status is false or /dashboard if true.
 export default function Register() {
   const { register } = useRegister();
   const { setUser } = useAuthStore();
@@ -38,7 +38,7 @@ export default function Register() {
     return Object.keys(newErrors).length === 0;
   };
 
-  // I have updated handleSubmit here to use the useRegister hook, store the user and token, and redirect based on status.
+  // I have updated handleSubmit to use the specific error message from the useRegister hook.
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -60,8 +60,9 @@ export default function Register() {
         // I have checked the user status here to redirect to /kyc if pending (false) or /dashboard if approved (true).
         router.push(userData.status ? "/dashboard" : "/kyc");
       }, 1000);
-    } catch (error) {
-      setToast({ message: "Registration failed. Please try again.", type: "error" });
+    } catch (error: any) {
+      // I have updated this to use the error message from the hook instead of a generic message.
+      setToast({ message: error.message || "Registration failed. Please try again.", type: "error" });
     }
   };
 
@@ -130,7 +131,7 @@ export default function Register() {
                 type="password"
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 px-4 py-2"
+                className="mt-1 block w-full rounded-md border-gray-300 dark:border свете-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 px-4 py-2"
               />
               {errors.password && <p className="mt-1 text-sm text-red-600">{errors.password}</p>}
             </div>
