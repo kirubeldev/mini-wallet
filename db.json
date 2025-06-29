@@ -59,6 +59,30 @@
       "walletId": null,
       "token": "token-8twvwbo5w-1751229368728",
       "createdAt": "2025-06-29T20:36:08.729Z"
+    },
+    {
+      "id": "0fd6",
+      "firstname": "yon",
+      "lastname": "tesnot",
+      "email": "kirubel.menberu@icog.et2",
+      "password": "mikimikim",
+      "status": false,
+      "kycId": null,
+      "walletId": null,
+      "token": "token-84hselr1f-1751230283159",
+      "createdAt": "2025-06-29T20:51:23.159Z"
+    },
+    {
+      "id": "e37d",
+      "firstname": "qwe",
+      "lastname": "wewe",
+      "email": "kirubel.menberu@icog.et3",
+      "password": "mikimikim",
+      "status": false,
+      "kycId": null,
+      "walletId": null,
+      "token": "token-6463iih12-1751230901018",
+      "createdAt": "2025-06-29T21:01:41.019Z"
     }
   ],
   "wallets": [],

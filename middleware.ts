@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import toast from 'react-hot-toast';
+import Toast from './components/Toast';
 
 // I have defined public routes that do not require authentication.
 const publicRoutes = ['/login', '/register'];
@@ -32,6 +34,7 @@ export function middleware(request: NextRequest) {
     }
 
     // I have allowed the request to proceed if a token is found.
+    
     console.log(`Middleware: Token found, proceeding to ${pathname}`);
   }
 
