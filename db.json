@@ -1,20 +1,7 @@
 {
   "users": [
     {
-      "id": "49e2",
-      "firstname": "yoni",
-      "lastname": "kin",
-      "email": "kirubel.menberu@icog.et",
-      "password": "mikimikim",
-      "theme": "light",
-      "status": false,
-      "kycId": null,
-      "walletId": null,
-      "token": "token-zfg3jm7pe-1751207426046",
-      "createdAt": "2025-06-29T14:30:26.047Z"
-    },
-    {
-      "id": "7265",
+      "id": "9036",
       "firstname": "kirubel",
       "lastname": "tekuame",
       "email": "kirubel.menberu@icog.et",
@@ -23,21 +10,8 @@
       "status": false,
       "kycId": null,
       "walletId": null,
-      "token": "token-67vohfs2w-1751208455857",
-      "createdAt": "2025-06-29T14:47:35.858Z"
-    },
-    {
-      "id": "c466",
-      "firstname": "yon",
-      "lastname": "te",
-      "email": "kirubel.menberu@icog.et",
-      "password": "mikimikim",
-      "theme": "light",
-      "status": false,
-      "kycId": null,
-      "walletId": null,
-      "token": "token-wotdorlv3-1751209062953",
-      "createdAt": "2025-06-29T14:57:42.953Z"
+      "token": "token-jxfphopj7-1751215810082",
+      "createdAt": "2025-06-29T16:50:10.082Z"
     }
   ],
   "wallets": [],

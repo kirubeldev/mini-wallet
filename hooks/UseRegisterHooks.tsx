@@ -20,7 +20,7 @@ export const useRegister = () => {
       const token = generateFakeToken();
 
       // I have logged the request details here to debug the POST to /api/users.
-      console.log("Sending POST to /api/users with data:", {
+      console.log("Sending POST to /users with data:", {
         firstname: formData.firstName,
         lastname: formData.lastName,
         email: formData.email,
@@ -34,7 +34,7 @@ export const useRegister = () => {
       });
 
       // I have mapped the form data here to match the JSON server users collection structure.
-      const response = await axiosInstance.post("/api/users", {
+      const response = await axiosInstance.post("/users", {
         firstname: formData.firstName,
         lastname: formData.lastName,
         email: formData.email,
