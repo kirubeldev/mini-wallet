@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { useWalletStore } from "@/store/wallet-store"
 import { useRouter } from "next/navigation"
-import Layout from "@/components/TopNav"
+import Layout from "@/components/LayoutNavs"
 import ATMCard from "@/components/ATMCard"
 import LowBalanceDialog from "@/components/LowBalanceDialog"
 import { Button } from "@/components/ui/button"
@@ -45,7 +45,7 @@ export default function Dashboard() {
         return "text-green-600 dark:text-green-400"
       case "failed":
         return "text-red-600 dark:text-red-400"
-      case "pending":
+      case "not-started":
         return "text-yellow-600 dark:text-yellow-400"
       default:
         return "text-gray-600 dark:text-gray-400"

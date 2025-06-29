@@ -25,7 +25,6 @@ export function middleware(request: NextRequest) {
     const token = request.cookies.get('token')?.value;
 
     // I have logged the token and user check for debugging purposes.
-    console.log(`Middleware: Path ${pathname}, Token: ${token || 'none'}`);
 
     // I have redirected to /login if no token is found for protected routes.
     if (!token) {

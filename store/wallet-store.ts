@@ -10,7 +10,7 @@ export interface User {
   theme: "light" | "dark"
   profileImage?: string
   minBalance: number
-  kycStatus: "pending" | "approved" | "rejected"
+  kycStatus: "not-started" | "approved" | "rejected"
   kycData?: {
     fullName: string
     documentType: string
@@ -38,7 +38,7 @@ export interface Transaction {
   toWallet?: string
   amount: number
   currency: string
-  status: "success" | "failed" | "pending"
+  status: "success" | "failed" | "not-started"
   timestamp: string
   reason?: string
   serviceCharge: number
@@ -125,7 +125,7 @@ export const useWalletStore = create<WalletState>((set, get) => ({
       currency: "ETB",
       theme: "dark",
       minBalance: 100,
-      kycStatus: "pending",
+      kycStatus: "not-started",
       profileImage: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
     }
 
@@ -192,7 +192,7 @@ export const useWalletStore = create<WalletState>((set, get) => ({
     const newUser: User = {
       ...userData,
       id: Date.now().toString(),
-      kycStatus: "pending",
+      kycStatus: "not-started",
     }
 
     const defaultWallet: Wallet = {

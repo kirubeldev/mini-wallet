@@ -1,126 +1,164 @@
-"use client"
+"use client";
 
-import type React from "react"
-import { useState } from "react"
-import { useWalletStore } from "@/store/wallet-store"
-import { useRouter } from "next/navigation"
-import Layout from "@/components/TopNav"
-import { Button } from "@/components/ui/button"
-import { CheckCircleIcon, XCircleIcon, ClockIcon, ExclamationTriangleIcon } from "@heroicons/react/24/outline"
+import type React from "react";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useAuthStore } from "@/store/AuthStore";
+import { useTheme } from "@/hooks/UseTheamHook";
+import Layout from "@/components/LayoutNavs";
+import { Button } from "@/components/ui/button";
+import Toast from "@/components/Toast";
+import KYCSuccessDialog from "@/components/kycSuccesDialog"; 
+import { CheckCircleIcon, ClockIcon, ExclamationTriangleIcon } from "@heroicons/react/24/outline";
+import { useKycSubmit } from "@/hooks/UseKycSubmit";
+import { useAutoLogin } from "@/hooks/UseAuthHook"; 
 
+// I have updated KYC.tsx to add userId field, remove initialBalance, and show dialogs for 3 seconds each.
 export default function KYC() {
-
-
-
-    const router = useRouter()
-  const { user, updateUser, addWallet } = useWalletStore()
+  const router = useRouter();
+  const { user } = useAuthStore();
+  const { submitKyc, isSubmitting, submitError, kycData, fetchError } = useKycSubmit();
+  const { isLoading: isAutoLoginLoading, error: autoLoginError } = useAutoLogin();
+  const { theme } = useTheme();
   const [formData, setFormData] = useState({
-    fullName: user?.kycData?.fullName || "",
-    documentType: user?.kycData?.documentType || "national_id",
-    documentNumber: user?.kycData?.documentNumber || "",
-    gender: user?.kycData?.gender || "",
-    dob: user?.kycData?.dob || "",
-    address: user?.kycData?.address || "",
-    country: user?.kycData?.country || "",
-    photoUrl: user?.kycData?.photoUrl || "",
-    initialBalance: user?.kycData?.initialBalance || 0,
-  })
-  const [showProcessingDialog, setShowProcessingDialog] = useState(false)
-  const [showApprovedDialog, setShowApprovedDialog] = useState(false)
-  const [isSubmitted, setIsSubmitted] = useState(false)
+    userId: user?.id || "",
+    fullName: kycData?.fullName || "",
+    documentType: kycData?.documentType || "national_id",
+    documentNumber: kycData?.documentNumber || "",
+    gender: kycData?.gender || "",
+    dob: kycData?.dob || "",
+    address: kycData?.address || "",
+    country: kycData?.country || "",
+    photoUrl: kycData?.photoUrl || "",
+  });
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+  const [showProcessingDialog, setShowProcessingDialog] = useState(false);
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
 
   const documentTypes = [
     { value: "national_id", label: "National ID" },
     { value: "passport", label: "Passport" },
     { value: "driver_license", label: "Driver License" },
-  ]
+  ];
+
+  // I have updated validation to include userId and exclude initialBalance.
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+    if (!formData.userId.trim()) newErrors.userId = "User ID is required";
+    if (!formData.fullName.trim()) newErrors.fullName = "Full name is required";
+    if (!formData.documentType) newErrors.documentType = "Document type is required";
+    if (!formData.documentNumber.trim()) newErrors.documentNumber = "Document number is required";
+    if (!formData.gender) newErrors.gender = "Gender is required";
+    if (!formData.dob) newErrors.dob = "Date of birth is required";
+    if (!formData.address.trim()) newErrors.address = "Address is required";
+    if (!formData.country) newErrors.country = "Country is required";
+    if (!formData.photoUrl.trim()) newErrors.photoUrl = "Photo URL is required";
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const getDocumentNumberLabel = () => {
     switch (formData.documentType) {
       case "passport":
-        return "Passport Number"
+        return "Passport Number";
       case "driver_license":
-        return "Driver License Number"
+        return "Driver License Number";
       case "national_id":
       default:
-        return "National ID Number"
+        return "National ID Number";
     }
-  }
+  };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsSubmitted(true)
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validateForm()) {
+      setToast({ message: "Please fill all required fields correctly.", type: "error" });
+      return;
+    }
+    if (!user?.id || formData.userId !== user.id) {
+      setToast({ message: "Invalid user ID. Please log in again.", type: "error" });
+      router.push("/login");
+      return;
+    }
 
-    // Update user with KYC data and set status to pending
-    updateUser({
-      kycData: formData,
-      kycStatus: "pending",
-    })
+    try {
+      const kycData = {
+        userId: formData.userId,
+        fullName: formData.fullName,
+        documentType: formData.documentType,
+        documentNumber: formData.documentNumber,
+        gender: formData.gender,
+        dob: formData.dob,
+        address: formData.address,
+        country: formData.country,
+        photoUrl: formData.photoUrl,
+      };
+      await submitKyc(user.id, kycData);
+      setToast({ message: "KYC information submitted successfully!", type: "success" });
+      setShowProcessingDialog(true);
+      document.body.style.cursor = "wait";
 
-    // Show processing dialog for 4 seconds
-    setShowProcessingDialog(true)
-    document.body.style.cursor = "wait"
-
-    setTimeout(() => {
-      setShowProcessingDialog(false)
-      // Auto-approve for demo and create wallet with initial balance
-      updateUser({ kycStatus: "approved" })
-
-      // Create wallet with initial balance from KYC form
-      // Create wallet with initial balance from KYC form
-      addWallet({
-        name: "KYC Approved Wallet",
-        balance: formData.initialBalance,
-        currency: user?.currency || "ETB",
-      })
-      setShowApprovedDialog(true)
-
-      // Show approved dialog for 3 seconds then redirect
       setTimeout(() => {
-        setShowApprovedDialog(false)
-        document.body.style.cursor = "default"
-        router.push("/dashboard")
-      }, 3000)
-    }, 4000)
-  }
+        setShowProcessingDialog(false);
+        setShowSuccessDialog(true);
+        document.body.style.cursor = "default";
+      }, 3000);
+    } catch (err: any) {
+      setToast({ message: err.message || "KYC submission failed. Please try again.", type: "error" });
+    }
+  };
+
+  const handleSuccessDialogClose = () => {
+    setShowSuccessDialog(false);
+    router.push("/dashboard");
+  };
 
   const getStatusIcon = () => {
     switch (user?.kycStatus) {
       case "approved":
-        return <CheckCircleIcon className="h-8 w-8 text-green-500" />
-      case "rejected":
-        return <XCircleIcon className="h-8 w-8 text-red-500" />
-      case "pending":
-        return <ClockIcon className="h-8 w-8 text-yellow-500" />
+        return <CheckCircleIcon className="h-8 w-8 text-green-500" />;
+      case "not-started":
       default:
-        return <ExclamationTriangleIcon className="h-8 w-8 text-gray-500" />
+        return <ExclamationTriangleIcon className="h-8 w-8 text-gray-500" />;
     }
-  }
+  };
 
   const getStatusColor = () => {
     switch (user?.kycStatus) {
       case "approved":
-        return "bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-700"
-      case "rejected":
-        return "bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-700"
-      case "pending":
-        return "bg-yellow-50 border-yellow-200 dark:bg-yellow-900/20 dark:border-yellow-700"
+        return "bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-700";
+      case "not-started":
       default:
-        return "bg-gray-50 border-gray-200 dark:bg-gray-900/20 dark:border-gray-700"
+        return "bg-gray-50 border-gray-200 dark:bg-gray-900/20 dark:border-gray-700";
     }
-  }
+  };
 
   const getStatusMessage = () => {
     switch (user?.kycStatus) {
       case "approved":
-        return "Your identity has been verified successfully. You can now access all features."
-      case "rejected":
-        return "Your KYC verification was rejected. Please review and resubmit your information."
-      case "pending":
-        return "Your KYC verification is under review. This usually takes 1-3 business days."
+        return "Your identity has been verified successfully. You can now access all features.";
+      case "not-started":
       default:
-        return "Please complete your KYC verification to unlock all features including transfers."
+        return "Please complete your KYC verification to unlock all features including transfers.";
     }
+  };
+
+  if (isAutoLoginLoading || (user?.kycStatus === "approved" && !kycData && !fetchError)) {
+    return (
+      <Layout>
+        <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+          Loading...
+        </div>
+      </Layout>
+    );
+  }
+  if (autoLoginError) {
+    console.log(`AutoLogin Error: ${autoLoginError.message}`);
+  }
+  if (fetchError) {
+    console.log(`KycFetch Error: ${fetchError.message}`);
+    setToast({ message: "Failed to load KYC data.", type: "error" });
   }
 
   return (
@@ -132,7 +170,7 @@ export default function KYC() {
           <p className="text-gray-600 dark:text-gray-400">Complete your identity verification to access all features</p>
         </div>
 
-        {/* Status Card - only show if status exists */}
+        {/* Status Card */}
         {user?.kycStatus && (
           <div className={`border rounded-lg p-6 ${getStatusColor()}`}>
             <div className="flex items-center">
@@ -156,8 +194,24 @@ export default function KYC() {
           <form onSubmit={handleSubmit} className="p-6 space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">User ID</label>
+                {user?.kycStatus === "approved" ? (
+                  <p className="mt-1 text-sm text-gray-900 dark:text-white py-2">{formData.userId}</p>
+                ) : (
+                  <input
+                    type="text"
+                    value={formData.userId}
+                    onChange={(e) => setFormData({ ...formData, userId: e.target.value })}
+                    className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    disabled
+                  />
+                )}
+                {errors.userId && <p className="mt-1 text-sm text-red-600">{errors.userId}</p>}
+              </div>
+
+              <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Full Name</label>
-                {isSubmitted ? (
+                {user?.kycStatus === "approved" ? (
                   <p className="mt-1 text-sm text-gray-900 dark:text-white py-2">{formData.fullName}</p>
                 ) : (
                   <input
@@ -165,13 +219,15 @@ export default function KYC() {
                     value={formData.fullName}
                     onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
                     className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    disabled={isSubmitting}
                   />
                 )}
+                {errors.fullName && <p className="mt-1 text-sm text-red-600">{errors.fullName}</p>}
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Document Type</label>
-                {isSubmitted ? (
+                {user?.kycStatus === "approved" ? (
                   <p className="mt-1 text-sm text-gray-900 dark:text-white py-2">
                     {documentTypes.find((type) => type.value === formData.documentType)?.label}
                   </p>
@@ -180,6 +236,7 @@ export default function KYC() {
                     value={formData.documentType}
                     onChange={(e) => setFormData({ ...formData, documentType: e.target.value })}
                     className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    disabled={isSubmitting}
                   >
                     {documentTypes.map((type) => (
                       <option key={type.value} value={type.value}>
@@ -188,13 +245,14 @@ export default function KYC() {
                     ))}
                   </select>
                 )}
+                {errors.documentType && <p className="mt-1 text-sm text-red-600">{errors.documentType}</p>}
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                   {getDocumentNumberLabel()}
                 </label>
-                {isSubmitted ? (
+                {user?.kycStatus === "approved" ? (
                   <p className="mt-1 text-sm text-gray-900 dark:text-white py-2">{formData.documentNumber}</p>
                 ) : (
                   <input
@@ -202,33 +260,36 @@ export default function KYC() {
                     value={formData.documentNumber}
                     onChange={(e) => setFormData({ ...formData, documentNumber: e.target.value })}
                     className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    disabled={isSubmitting}
                   />
                 )}
+                {errors.documentNumber && <p className="mt-1 text-sm text-red-600">{errors.documentNumber}</p>}
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Gender</label>
-                {isSubmitted ? (
+                {user?.kycStatus === "approved" ? (
                   <p className="mt-1 text-sm text-gray-900 dark:text-white py-2 capitalize">{formData.gender}</p>
                 ) : (
                   <select
                     value={formData.gender}
                     onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
                     className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    disabled={isSubmitting}
                   >
                     <option value="">Select Gender</option>
                     <option value="male">Male</option>
                     <option value="female">Female</option>
-                    <option value="other">Other</option>
                   </select>
                 )}
+                {errors.gender && <p className="mt-1 text-sm text-red-600">{errors.gender}</p>}
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Date of Birth</label>
-                {isSubmitted ? (
+                {user?.kycStatus === "approved" ? (
                   <p className="mt-1 text-sm text-gray-900 dark:text-white py-2">
-                    {new Date(formData.dob).toLocaleDateString()}
+                    {formData.dob ? new Date(formData.dob).toLocaleDateString() : ""}
                   </p>
                 ) : (
                   <input
@@ -236,19 +297,22 @@ export default function KYC() {
                     value={formData.dob}
                     onChange={(e) => setFormData({ ...formData, dob: e.target.value })}
                     className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    disabled={isSubmitting}
                   />
                 )}
+                {errors.dob && <p className="mt-1 text-sm text-red-600">{errors.dob}</p>}
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Country</label>
-                {isSubmitted ? (
+                {user?.kycStatus === "approved" ? (
                   <p className="mt-1 text-sm text-gray-900 dark:text-white py-2">{formData.country}</p>
                 ) : (
                   <select
                     value={formData.country}
                     onChange={(e) => setFormData({ ...formData, country: e.target.value })}
                     className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    disabled={isSubmitting}
                   >
                     <option value="">Select Country</option>
                     <option value="ET">Ethiopia</option>
@@ -258,12 +322,13 @@ export default function KYC() {
                     <option value="DE">Germany</option>
                   </select>
                 )}
+                {errors.country && <p className="mt-1 text-sm text-red-600">{errors.country}</p>}
               </div>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Address</label>
-              {isSubmitted ? (
+              {user?.kycStatus === "approved" ? (
                 <p className="mt-1 text-sm text-gray-900 dark:text-white py-2">{formData.address}</p>
               ) : (
                 <textarea
@@ -271,32 +336,15 @@ export default function KYC() {
                   onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                   rows={3}
                   className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  disabled={isSubmitting}
                 />
               )}
+              {errors.address && <p className="mt-1 text-sm text-red-600">{errors.address}</p>}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Initial Balance</label>
-              {isSubmitted ? (
-                <p className="mt-1 text-sm text-gray-900 dark:text-white py-2">
-                  {formData.initialBalance} {user?.currency}
-                </p>
-              ) : (
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={formData.initialBalance}
-                  onChange={(e) => setFormData({ ...formData, initialBalance: Number.parseFloat(e.target.value) || 0 })}
-                  placeholder="Enter initial wallet balance"
-                  className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                />
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Photo URL</label>
-              {isSubmitted ? (
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Selfie Photo URL</label>
+              {user?.kycStatus === "approved" ? (
                 <div className="mt-2">
                   <img
                     src={formData.photoUrl || "/placeholder.svg"}
@@ -312,6 +360,7 @@ export default function KYC() {
                     onChange={(e) => setFormData({ ...formData, photoUrl: e.target.value })}
                     placeholder="https://example.com/photo.jpg"
                     className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    disabled={isSubmitting}
                   />
                   {formData.photoUrl && (
                     <div className="mt-2">
@@ -320,18 +369,21 @@ export default function KYC() {
                         alt="Preview"
                         className="h-20 w-20 object-cover rounded-lg"
                         onError={(e) => {
-                          e.currentTarget.style.display = "none"
+                          e.currentTarget.style.display = "none";
                         }}
                       />
                     </div>
                   )}
+                  {errors.photoUrl && <p className="mt-1 text-sm text-red-600">{errors.photoUrl}</p>}
                 </>
               )}
             </div>
 
-            {!isSubmitted && (
-              <div className="flex justify-end">
-                <Button type="submit">Submit KYC Information</Button>
+            {user?.kycStatus !== "approved" && (
+              <div className="flex justify-start">
+            <Button type="submit" className="w-fit  text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500" disabled={isSubmitting}>
+                  {isSubmitting ? "Submitting..." : "Submit KYC Information"}
+                </Button>
               </div>
             )}
           </form>
@@ -359,7 +411,7 @@ export default function KYC() {
                 <ClockIcon className="mx-auto h-12 w-12 text-yellow-500 mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Processing Your Application</h3>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Your KYC verification is under review. This usually takes 1-3 business days.
+                  Your KYC verification is being processed. Please wait...
                 </p>
               </div>
             </div>
@@ -367,24 +419,14 @@ export default function KYC() {
         </div>
       )}
 
-      {/* Approved Dialog */}
-      {showApprovedDialog && (
-        <div className="fixed inset-0 z-50 overflow-y-auto">
-          <div className="flex min-h-screen items-center justify-center p-4">
-            <div className="fixed inset-0 bg-gray-500 bg-opacity-75" />
-            <div className="relative bg-white dark:bg-gray-800 rounded-lg p-6 shadow-xl max-w-md w-full">
-              <div className="text-center">
-                <CheckCircleIcon className="mx-auto h-12 w-12 text-green-500 mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">🎉 Congratulations!</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                  Your KYC verification has been approved successfully.
-                </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Redirecting to dashboard...</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Success Dialog */}
+      <KYCSuccessDialog
+        isOpen={showSuccessDialog}
+        onClose={() => setShowSuccessDialog(false)}
+        onRedirect={() => router.push("/dashboard")}
+      />
+
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </Layout>
-  )
+  );
 }

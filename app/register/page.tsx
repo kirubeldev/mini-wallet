@@ -4,28 +4,29 @@ import type React from "react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useRegister } from "@/hooks/UseRegisterHooks";
-import { useAuthStore } from "@/store/AuthRegistrationStore"; 
-import { useTheme } from "@/hooks/UseTheamHook"; 
-import Toast from "@/components/Toast";
+import { useTheme } from "@/hooks/UseTheamHook";
 
-// I have updated the Register page to use the useTheme hook for theme management and set the token in a cookie after successful registration.
+import { useAuthStore } from "@/store/AuthStore";
+import Toast from "@/components/Toast";
+import { useAutoLogin, useRegister } from "@/hooks/UseAuthHook";
+
+// I have updated Register.tsx to integrate useAutoLogin for persistence, fix kycStatus in handleSubmit, and remove KYC fields.
 export default function Register() {
   const { register } = useRegister();
   const { setUser } = useAuthStore();
-  const { theme, setTheme } = useTheme(); // I have added the useTheme hook to manage theme state.
+  const { theme, setTheme } = useTheme();
+  const { isLoading: isAutoLoginLoading, error: autoLoginError } = useAutoLogin(); // I have added useAutoLogin to restore user data on refresh.
   const router = useRouter();
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
     email: "",
     password: "",
-    theme: theme, // I have initialized the theme from the useTheme hook.
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
-  // I have kept the validateForm function here to check form inputs before sending to the API.
+  // I have kept validateForm to check only basic user fields, removing KYC-related validation.
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
     if (!formData.firstName.trim()) newErrors.firstName = "First name is required";
@@ -38,34 +39,47 @@ export default function Register() {
     return Object.keys(newErrors).length === 0;
   };
 
-  // I have updated handleSubmit to set the token in a cookie and use the specific error message from the useRegister hook.
+  // I have updated handleSubmit to use kycStatus for redirection and include kycStatus in setUser.
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
     try {
-      const userData = await register(formData);
-      // I have stored the registered user and token in the Zustand store here for global access.
+      const userData = await register({
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        password: formData.password,
+      });
+      // I have stored the registered user, including kycStatus, in the Zustand store.
       setUser({
         id: userData.id,
         firstname: userData.firstname,
         lastname: userData.lastname,
         email: userData.email,
         token: userData.token,
+        kycStatus: userData.kycStatus || "not-started",
       });
-      // I have set the token in a cookie for middleware authentication.
+      // I have set the token in a cookie for middleware authentication and auto-login.
       document.cookie = `token=${userData.token}; path=/; max-age=${60 * 60 * 24 * 7}`;
       console.log(`Register: User registered - User: ${JSON.stringify(userData)}, Token: ${userData.token}`);
       setToast({ message: "Registration successful!", type: "success" });
       setTimeout(() => {
-        // I have checked the user status here to redirect to /kyc if pending (false) or /dashboard if approved (true).
-        router.push(userData.status ? "/dashboard" : "/kyc");
+        // I have fixed to use kycStatus instead of status for redirection.
+        router.push(userData.kycStatus === "approved" ? "/dashboard" : "/kyc");
       }, 1000);
     } catch (error: any) {
-      // I have used the error message from the hook to display specific errors in the Toast component.
       console.log(`Register: Error - ${error.message}`);
       setToast({ message: error.message || "Registration failed. Please try again.", type: "error" });
     }
   };
+
+  // I have added a loading state for auto-login to prevent form rendering during user fetch.
+  if (isAutoLoginLoading) {
+    return <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">Loading...</div>;
+  }
+  if (autoLoginError) {
+    console.log(`AutoLogin Error: ${autoLoginError.message}`);
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
@@ -132,7 +146,6 @@ export default function Register() {
               />
               {errors.password && <p className="mt-1 text-sm text-red-600">{errors.password}</p>}
             </div>
-           
           </div>
           <div>
             <button

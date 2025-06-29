@@ -5,7 +5,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { useLogin } from "@/hooks/UseloginHook"; 
+import { useLogin } from "@/hooks/UseAuthHook"; 
 import Toast from "@/components/Toast";
 
 // I have updated the Login page to use useLogin hook, validate inputs, and redirect based on kycStatus.
@@ -29,7 +29,7 @@ export default function Login() {
     return Object.keys(newErrors).length === 0;
   };
 
-  // I have updated handleSubmit to use the login hook and redirect based on kycStatus.
+  // I have updated handsleSubmit to use the login hook and redirect based on kycStatus.
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
@@ -41,7 +41,7 @@ export default function Login() {
       }
       setToast({ message: "Login successful!", type: "success" });
       setTimeout(() => {
-        router.push(result.kycStatus === "pending" ? "/kyc" : "/dashboard");
+        router.push(result.kycStatus === "not-started" ? "/kyc" : "/dashboard");
       }, 1000);
     } catch (error: any) {
       setToast({ message: error.message || "Login failed. Please try again.", type: "error" });

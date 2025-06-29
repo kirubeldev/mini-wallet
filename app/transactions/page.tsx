@@ -3,7 +3,7 @@
 import type React from "react"
 import { useState } from "react"
 import { useWalletStore } from "@/store/wallet-store"
-import Layout from "@/components/TopNav"
+import Layout from "@/components/LayoutNavs"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -93,7 +93,7 @@ export default function Transactions() {
         return "text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/20"
       case "failed":
         return "text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/20"
-      case "pending":
+      case "not-started":
         return "text-yellow-600 dark:text-yellow-400 bg-yellow-100 dark:bg-yellow-900/20"
       default:
         return "text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-900/20"
@@ -181,7 +181,7 @@ export default function Transactions() {
                 <option value="all">All Status</option>
                 <option value="success">Success</option>
                 <option value="failed">Failed</option>
-                <option value="pending">Pending</option>
+                <option value="not-started">not-started</option>
               </select>
             </div>
 
@@ -364,9 +364,9 @@ export default function Transactions() {
               </div>
             </div>
             <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
-              <div className="text-sm text-gray-500 dark:text-gray-400">Pending</div>
+              <div className="text-sm text-gray-500 dark:text-gray-400">not-started</div>
               <div className="text-2xl font-bold text-yellow-600">
-                {filteredTransactions.filter((t) => t.status === "pending").length}
+                {filteredTransactions.filter((t) => t.status === "not-started").length}
               </div>
             </div>
           </div>

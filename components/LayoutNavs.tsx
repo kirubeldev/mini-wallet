@@ -17,8 +17,9 @@ import {
   UserIcon,
   ArrowRightOnRectangleIcon,
 } from "@heroicons/react/24/outline";
-import { useAuthStore } from "@/store/AuthRegistrationStore"; 
+import { useAuthStore } from "@/store/AuthStore"; 
 import { useTheme } from "@/hooks/UseTheamHook"; 
+import { useAutoLogin } from "@/hooks/UseAuthHook";
 
 // I have created a layout component here that provides a side nav and header for all pages, using user data from Zustand and theme from useTheme hook.
 interface LayoutProps {
@@ -26,6 +27,8 @@ interface LayoutProps {
 }
 
 export default function Layout({ children }: LayoutProps) {
+    const { isLoading: isAutoLoginLoading, error: autoLoginError } = useAutoLogin();
+  
   const router = useRouter();
   const pathname = usePathname();
   const { user, setUser } = useAuthStore();
@@ -50,13 +53,25 @@ export default function Layout({ children }: LayoutProps) {
     setUserMenuOpen(false);
     router.push("/login");
   };
-
+ if (isAutoLoginLoading) {
+    return (
+      <Layout>
+        <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+          Loading...
+        </div>
+      </Layout>
+    );
+  }
+  if (autoLoginError) {
+    console.log(`AutoLogin Error: ${autoLoginError.message}`);
+  }
   // I have logged the user data here to debug the display issue in the user menu.
   console.log(`Layout: User data - ${JSON.stringify(user)}`);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Mobile sidebar */}
+
+    
       <div className={`fixed inset-0 z-50 lg:hidden ${sidebarOpen ? "block" : "hidden"}`}>
         <div className="fixed inset-0 bg-gray-600 bg-opacity-75" onClick={() => setSidebarOpen(false)} />
         <div className="fixed inset-y-0 left-0 flex w-64 flex-col bg-white dark:bg-gray-800">

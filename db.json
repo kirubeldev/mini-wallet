@@ -1,88 +1,18 @@
 {
   "users": [
     {
-      "id": "a951",
-      "firstname": "Kirubel",
-      "lastname": "Tekuame",
-      "email": "kirubel.menberu@icog.et",
-      "password": "123456",
-      "status": false,
-      "kycId": null,
-      "walletId": null,
-      "token": "token-07i0cedpe-1751223422687",
-      "createdAt": "2025-06-29T18:57:02.687Z"
-    },
-    {
-      "id": "696a",
-      "firstname": "mam",
-      "lastname": "minte",
-      "email": "kirubelmenberu35@gmail.com",
-      "password": "mikimikim",
-      "status": false,
-      "kycId": null,
-      "walletId": null,
-      "token": "token-4tjak3tau-1751223540555",
-      "createdAt": "2025-06-29T18:59:00.556Z"
-    },
-    {
-      "id": "237a",
+      "id": "171e",
       "firstname": "minte",
-      "lastname": "tekuame",
-      "email": "kirubel.menberu@icog.ets",
-      "password": "mikimikim",
-      "status": false,
-      "kycId": null,
-      "walletId": null,
-      "token": "token-js0ezbpmz-1751227897836",
-      "createdAt": "2025-06-29T20:11:37.836Z"
-    },
-    {
-      "id": "5085",
-      "firstname": "sdf",
-      "lastname": "sfa",
-      "email": "kirubel.menberu@icog.etss",
-      "password": "mikimikim",
-      "status": false,
-      "kycId": null,
-      "walletId": null,
-      "token": "token-7w6e30c9d-1751228146089",
-      "createdAt": "2025-06-29T20:15:46.090Z"
-    },
-    {
-      "id": "9cbb",
-      "firstname": "dan",
       "lastname": "tesnot",
-      "email": "kirubel.menberu@icog.et1",
+      "email": "kirubel.menberu@icog.et",
       "password": "mikimikim",
-      "status": false,
-      "kycId": null,
-      "walletId": null,
-      "token": "token-8twvwbo5w-1751229368728",
-      "createdAt": "2025-06-29T20:36:08.729Z"
-    },
-    {
-      "id": "0fd6",
-      "firstname": "yon",
-      "lastname": "tesnot",
-      "email": "kirubel.menberu@icog.et2",
-      "password": "mikimikim",
-      "status": false,
-      "kycId": null,
-      "walletId": null,
-      "token": "token-84hselr1f-1751230283159",
-      "createdAt": "2025-06-29T20:51:23.159Z"
-    },
-    {
-      "id": "e37d",
-      "firstname": "qwe",
-      "lastname": "wewe",
-      "email": "kirubel.menberu@icog.et3",
-      "password": "mikimikim",
-      "status": false,
-      "kycId": null,
-      "walletId": null,
-      "token": "token-6463iih12-1751230901018",
-      "createdAt": "2025-06-29T21:01:41.019Z"
+      "currency": "ETB",
+      "theme": "light",
+      "minBalance": 0,
+      "kycStatus": "not-started",
+      "kycData": null,
+      "token": "token-6llp76gyt-1751240689805",
+      "createdAt": "2025-06-29T23:44:49.806Z"
     }
   ],
   "wallets": [],
