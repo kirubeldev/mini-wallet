@@ -3,7 +3,7 @@
 import type React from "react"
 import { useState } from "react"
 import { useWalletStore } from "@/store/wallet-store"
-import Layout from "@/components/Layout"
+import Layout from "@/components/TopNav"
 import { Button } from "@/components/ui/button"
 import { UserCircleIcon } from "@heroicons/react/24/outline"
 

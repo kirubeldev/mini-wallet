@@ -3,15 +3,16 @@ import { create } from "zustand";
 // I have defined the User interface to match the JSON server.
 interface User {
   id: string;
-  firstName: string;
-  lastName: string;
+  firstname: string;
+  lastname: string;
   email: string;
-  password: string;
-  currency: string;
   theme: "light" | "dark";
+  token?: string;
+  password?: string;
+  currency?: string;
   profileImage?: string;
-  minBalance: number;
-  kycStatus: "pending" | "approved" | "rejected";
+  minBalance?: number;
+  kycStatus?: "pending" | "approved" | "rejected";
   kycData?: {
     fullName: string;
     documentType: string;
@@ -23,20 +24,19 @@ interface User {
     photoUrl: string;
     initialBalance: number;
   };
-  token?: string;
 }
 
-// I have created a Zustand store to manage the authenticated user and token.
-interface AuthState {
+// I have defined the AuthStore interface for Zustand state management.
+interface AuthStore {
   user: User | null;
   token: string | null;
-  setUser: (user: User | null, token: string | null) => void;
-  logout: () => void;
+  setUser: (user: User | null, token?: string) => void;
 }
 
-export const useLoginAuthStore = create<AuthState>((set) => ({
+// I have created the Zustand store for authentication.
+export const useLoginAuthStore = create<AuthStore>((set) => ({
   user: null,
   token: null,
-  setUser: (user, token) => set({ user, token }),
-  logout: () => set({ user: null, token: null }),
+  // I have implemented setUser to update both user and token in the store.
+  setUser: (user, token) => set({ user, token: token || user?.token || null }),
 }));

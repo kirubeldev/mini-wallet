@@ -6,14 +6,13 @@ interface User {
   firstname: string;
   lastname: string;
   email: string;
-  theme: "light" | "dark";
   token: string;
 }
 
 // I have created an AuthState interface here to manage the current user and token in the Zustand store.
 interface AuthState {
-  user: User | null;
-  setUser: (user: User) => void;
+   user: User | null;
+  setUser: (user: User | null) => void;
   clearUser: () => void;
   setToken: (token: string) => void;
 }

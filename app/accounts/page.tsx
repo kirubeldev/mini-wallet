@@ -3,7 +3,7 @@
 import type React from "react"
 import { useState } from "react"
 import { useWalletStore } from "@/store/wallet-store"
-import Layout from "@/components/Layout"
+import Layout from "@/components/TopNav"
 import ATMCard from "@/components/ATMCard"
 import LowBalanceDialog from "@/components/LowBalanceDialog"
 import { Button } from "@/components/ui/button"
@@ -99,7 +99,7 @@ export default function Accounts() {
 
         {/* Account Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {accounts.map((account) => {
+          {accounts?.map((account) => {
             const isLowBalance = account.balance < (user?.minBalance || 100)
             return (
               <ATMCard
@@ -114,7 +114,7 @@ export default function Accounts() {
           })}
         </div>
 
-        {accounts.length === 0 && (
+        {accounts?.length === 0 && (
           <div className="text-center py-12">
             <div className="mx-auto h-12 w-12 text-gray-400">
               <CreditCardIcon className="h-12 w-12" />
@@ -171,7 +171,7 @@ export default function Accounts() {
                     onChange={(e) => setFormData({ ...formData, bankName: e.target.value })}
                     className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
                   >
-                    {bankOptions.map((bank) => (
+                    {bankOptions?.map((bank) => (
                       <option key={bank} value={bank}>
                         {bank}
                       </option>

@@ -1,7 +1,7 @@
 "use client";
 
 import type React from "react";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import {
@@ -17,8 +17,10 @@ import {
   UserIcon,
   ArrowRightOnRectangleIcon,
 } from "@heroicons/react/24/outline";
+import { useAuthStore } from "@/store/AuthRegistrationStore"; 
+import { useTheme } from "@/hooks/UseTheamHook"; 
 
-// I have created a layout component here that provides a side nav and header for all pages, independent of user authentication.
+// I have created a layout component here that provides a side nav and header for all pages, using user data from Zustand and theme from useTheme hook.
 interface LayoutProps {
   children: React.ReactNode;
 }
@@ -26,44 +28,31 @@ interface LayoutProps {
 export default function Layout({ children }: LayoutProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const { user, setUser } = useAuthStore();
+  const { theme, setTheme } = useTheme(); // I have added the useTheme hook to manage theme state.
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const [theme, setTheme] = useState<"light" | "dark">("light");
 
   // I have defined the navigation items here for the side nav, consistent across all pages.
   const navigation = [
     { name: "Dashboard", href: "/dashboard", icon: HomeIcon },
-    { name: "Wallets", href: "/wallets", icon: WalletIcon },
+    { name: "Wallets", href: "/wallet", icon: WalletIcon },
     { name: "Transactions", href: "/transactions", icon: ArrowsRightLeftIcon },
     { name: "KYC", href: "/kyc", icon: DocumentCheckIcon },
     { name: "Settings", href: "/settings", icon: Cog6ToothIcon },
   ];
 
-  // I have implemented theme toggling here using local state, applying dark/light mode to the document.
-  const toggleTheme = () => {
-    const newTheme = theme === "light" ? "dark" : "light";
-    setTheme(newTheme);
-    if (newTheme === "dark") {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-  };
-
-  // I have added a logout handler here to redirect to /login, assuming no user dependency.
+  // I have updated the logout handler to clear the token cookie and Zustand store, then redirect to /login.
   const handleLogout = () => {
+    console.log(`Logout: Clearing user - User: ${JSON.stringify(user)}, Token: ${user?.token || 'none'}`);
+    setUser(null); // I have cleared the user from the Zustand store.
+    document.cookie = 'token=; path=/; max-age=0'; // I have cleared the token cookie.
     setUserMenuOpen(false);
     router.push("/login");
   };
 
-  // I have applied the initial theme on mount here to ensure consistent UI.
-  useEffect(() => {
-    if (theme === "dark") {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-  }, [theme]);
+  // I have logged the user data here to debug the display issue in the user menu.
+  console.log(`Layout: User data - ${JSON.stringify(user)}`);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -144,7 +133,7 @@ export default function Layout({ children }: LayoutProps) {
             {/* Right side - Theme toggle and User menu */}
             <div className="flex items-center space-x-4 ml-auto">
               <button
-                onClick={toggleTheme}
+                onClick={() => setTheme(theme === "light" ? "dark" : "light")}
                 className="p-2 rounded-md text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors"
                 title={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
               >
@@ -157,12 +146,17 @@ export default function Layout({ children }: LayoutProps) {
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
                   className="flex items-center space-x-3 p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                 >
-                  <div className="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-medium">
-                    G
-                  </div>
+                  <div className="h-8 w-8 rounded-full  bg-blue-600 flex items-center justify-center text-white text-sm font-medium">
+  {(user?.firstname?.[0] || "G") + (user?.lastname?.[0] || "U")}
+</div>
+
                   <div className="hidden sm:block text-left">
-                    <p className="text-sm font-medium text-gray-900 dark:text-white">Guest</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">guest@example.com</p>
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">
+                      {user ? `${user.firstname || "Guest"} ${user.lastname || ""}` : "Guest"}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      {user?.email || "guest@example.com"}
+                    </p>
                   </div>
                 </button>
 

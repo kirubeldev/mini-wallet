@@ -13,7 +13,6 @@ export const useRegister = () => {
     lastName: string;
     email: string;
     password: string;
-    theme: "light" | "dark";
   }) => {
     try {
       // I have added a GET request here to check if a user with the provided email already exists.
@@ -22,7 +21,7 @@ export const useRegister = () => {
       // I have checked if the response contains any users with the provided email.
       if (checkEmailResponse.data.length > 0) {
         console.log("Email already exists:", formData.email);
-        throw new Error("This email is already Existed. Please use a different email.");
+        throw new Error("Email already Existed. Please use a different email.");
       }
 
       // I have generated a fake token here for the user to use in subsequent requests.
@@ -34,7 +33,6 @@ export const useRegister = () => {
         lastname: formData.lastName,
         email: formData.email,
         password: formData.password,
-        theme: formData.theme,
         status: false,
         kycId: null,
         walletId: null,
@@ -48,7 +46,6 @@ export const useRegister = () => {
         lastname: formData.lastName,
         email: formData.email,
         password: formData.password, // In a real app, this should be hashed
-        theme: formData.theme,
         status: false, // I have set status to false (pending) for new users.
         kycId: null, // I have added a null kycId here for future relation with the kyc collection.
         walletId: null, // I have added a null walletId here for future relation with the wallets collection.
@@ -57,12 +54,12 @@ export const useRegister = () => {
       });
 
       // I have logged the response here to verify the POST success.
-      console.log("POST response:", response.data);
+      console.log("Register: POST response:", response.data);
 
       return response.data;
     } catch (error: any) {
       // I have logged the error here to debug the POST failure or email check failure.
-      console.log("Error during registration:", error.response?.data || error.message);
+      console.log("Register: Error during registration:", error.response?.data || error.message);
       throw new Error(error.message || "Registration failed. Please try again.");
     }
   }, []);
