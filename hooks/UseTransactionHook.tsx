@@ -209,7 +209,7 @@ export const useTransactions = () => {
     error: senderWalletsError,
     isLoading: isLoadingSenderWallets,
     mutate: mutateSenderWallets,
-  } = useSWR<Wallet[]>(userId ? ["/wallets", userId] : null, ([url, id]) => fetchWalletsByUserId(url, { arg: id }), {
+  } = useSWR<Wallet[]>(userId ? ["/wallets", userId] : null, ([url, id]: [string, string]) => fetchWalletsByUserId(url, { arg: id }), {
     revalidateOnFocus: false,
   });
 
@@ -218,7 +218,7 @@ export const useTransactions = () => {
     error: receiverWalletsError,
     isLoading: isLoadingReceiverWallets,
     mutate: mutateReceiverWallets,
-  } = useSWR<Wallet[]>(externalUserId ? ["/wallets", externalUserId] : null, ([url, id]) =>
+  } = useSWR<Wallet[]>(externalUserId ? ["/wallets", externalUserId] : null, ([url, id]: [string, string]) =>
     fetchWalletsByUserId(url, { arg: id })
   );
 
@@ -227,8 +227,9 @@ export const useTransactions = () => {
     error: transactionsError,
     isLoading: isLoadingTransactions,
     mutate: mutateTransactions,
-  } = useSWR<Transaction[]>(userId ? ["/transactions", userId] : null, ([url, id]) =>
-    fetchTransactionsByUserId(url, { arg: id })
+  } = useSWR<Transaction[]>(
+    userId ? ["/transactions", userId] : null,
+    ([url, id]: [string, string]) => fetchTransactionsByUserId(url, { arg: id })
   );
 
   const externalUsers = useMemo(

@@ -108,6 +108,7 @@ export const useKycSubmit = () => {
           email: updatedUser.email,
           token: updatedUser.token ?? "",
           kycStatus: updatedUser.kycStatus || "approved",
+          profileImage: updatedUser.profileImage ?? null,
         };
         
         setUser(userData);
@@ -126,6 +127,9 @@ export const useKycSubmit = () => {
             throw new Error("Account number already exists. Please try again.");
           }
 
+          if (!user) {
+            throw new Error("User not found. Cannot create wallet.");
+          }
           const walletResponse = await axiosInstance.post("/wallets", {
             walletId,
             userId: user.id,

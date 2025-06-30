@@ -308,13 +308,12 @@ export default function Wallets() {
                   id: wallet.walletId,
                   name: user ? `${user.firstname} ${user.lastname}` : "Wallet",
                   balance: wallet.balance,
-                  currency: user?.currency || "USD",
+                  currency: "USD",
                 }}
                 isLowBalance={false}
                 balanceVisible={balanceVisibility[wallet.walletId] || false}
                 onToggleBalance={() => toggleBalanceVisibility(wallet.walletId)}
                 onLowBalanceAlert={() => setLowBalanceDialog({ isOpen: true, wallet })}
-                onCardClick={() => openCardDepositDialog(wallet.walletId)}
               />
             ))
           ) : (
@@ -351,7 +350,7 @@ export default function Wallets() {
           <form onSubmit={handleAddWallet} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Initial Balance ({user?.currency || "USD"})
+                Initial Balance  "USD"
               </label>
               <input
                 type="number"
@@ -392,7 +391,7 @@ export default function Wallets() {
           <form onSubmit={handleCardDeposit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Deposit Amount ({user?.currency || "USD"})
+                Deposit Amount "USD"
               </label>
               <input
                 type="number"
@@ -447,14 +446,14 @@ export default function Wallets() {
                   walletData.map((wallet: Wallet) => (
                     <option key={wallet.walletId} value={wallet.walletId}>
                       {user ? `${user.firstname} ${user.lastname}` : "Wallet"} - {wallet.accountNumber.slice(0, 8)}...
-                      (Balance: {wallet.balance} {user?.currency || "USD"})
+                      (Balance: {wallet.balance} "USD"
                     </option>
                   ))}
               </select>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Deposit Amount ({user?.currency || "USD"})
+                Deposit Amount ("USD"
               </label>
               <input
                 type="number"
@@ -509,7 +508,7 @@ export default function Wallets() {
                   walletData.map((wallet: Wallet) => (
                     <option key={wallet.walletId} value={wallet.walletId}>
                       {user ? `${user.firstname} ${user.lastname}` : "Wallet"} - {wallet.accountNumber.slice(0, 8)}...
-                      (Balance: {wallet.balance} {user?.currency || "USD"})
+                      (Balance: {wallet.balance} "USD"
                     </option>
                   ))}
               </select>

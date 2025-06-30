@@ -20,6 +20,7 @@ import {
 import { useAuthStore } from "@/store/AuthStore"; 
 import { useTheme } from "@/hooks/UseTheamHook"; 
 import { useAutoLogin } from "@/hooks/UseAuthHook";
+import { create } from "zustand";
 
 // I have created a layout component here that provides a side nav and header for all pages, using user data from Zustand and theme from useTheme hook.
 interface LayoutProps {
@@ -212,3 +213,16 @@ export default function Layout({ children }: LayoutProps) {
     </div>
   );
 }
+export interface User {
+  // ... your user fields
+}
+
+type AuthStore = {
+  user: User | null;
+  setUser: (user: User | null) => void;
+};
+
+export const useAuthStores = create<AuthStore>((set) => ({
+  user: null,
+  setUser: (user: User | null) => set({ user }),
+}));

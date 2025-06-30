@@ -119,18 +119,7 @@ export const useWalletStore = create<WalletState>((set, get) => ({
 
   login: (email: string, password: string) => {
     // Mock login - in real app, this would call an API
-    const mockUser: User = {
-      id: "1",
-      firstName: "John",
-      lastName: "Doe",
-      email,
-      password: "password123",
-      currency: "USD",
-      theme: "dark",
-      minBalance: 100,
-      kycStatus: "not-started",
-      profileImage: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
-    };
+   
 
     const mockWallets: Wallet[] = [
       {
@@ -183,12 +172,7 @@ export const useWalletStore = create<WalletState>((set, get) => ({
       },
     ];
 
-    set({
-      user: mockUser,
-      wallets: mockWallets,
-      transactions: mockTransactions,
-      isAuthenticated: true,
-    });
+   
   },
 
   register: (userData) => {

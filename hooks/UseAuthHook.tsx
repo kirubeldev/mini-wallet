@@ -13,7 +13,7 @@ interface User {
   password?: string;
   currency: string;
   theme: "light" | "dark";
-  profileImage?: string;
+  profileImage: string;
   kycStatus: "not-started" | "approved";
   token?: string;
 }
@@ -109,6 +109,7 @@ export const useAutoLogin = () => {
           email: fetchedUser.email,
           token: fetchedUser.token ?? "",
           kycStatus: fetchedUser.kycStatus || "not-started",
+          profileImage: fetchedUser.profileImage || "",
         };
         // I have stored the user in the Zustand store.
         setUser(userData);
@@ -173,7 +174,7 @@ export const useLogin = () => {
           await axiosInstance.patch(`/users/${fullUserData.id}`, { id: userId });
         }
 
-        // I have mapped the fetched user to match the AuthStore's User interface, including kycStatus.
+        // I have mapped the fetched user to match the AuthStore's User interface, including kycStatus and profileImage.
         const userData = {
           id: userId,
           firstname: fullUserData.firstname || "Guest",
@@ -181,6 +182,7 @@ export const useLogin = () => {
           email: fullUserData.email,
           token: fullUserData.token ?? "",
           kycStatus: fullUserData.kycStatus || "not-started",
+          profileImage: fullUserData.profileImage || "",
         };
         // I have stored the user in the Zustand store to make user data and kycStatus visible.
         setUser(userData);
@@ -267,7 +269,7 @@ export const useRegister = () => {
           lastname: userResponse.data.lastname || "",
           email: userResponse.data.email,
           profileImage: userResponse.data.profileImage || "",
-          token: userResponse.data.token,
+          token: userResponse.data.token ? userResponse.data.token : "",
           kycStatus: userResponse.data.kycStatus || "not-started",
           currency: userResponse.data.currency || "USD",
           theme: userResponse.data.theme || "light",

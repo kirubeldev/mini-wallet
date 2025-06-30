@@ -66,8 +66,6 @@ export default function Register() {
         profileImage: userData.profileImage || "",
         token: userData.token,
         kycStatus: userData.kycStatus || "not-started",
-        currency: "USD",
-        theme: userData.theme || "light",
       });
       document.cookie = `token=${userData.token}; path=/; max-age=${60 * 60 * 24 * 7}`;
       console.log(`Register: User registered - User: ${JSON.stringify(userData)}, Token: ${userData.token}`);
