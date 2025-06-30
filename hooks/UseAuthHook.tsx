@@ -263,22 +263,30 @@ export const useRegister = () => {
         console.log("Register: POST response:", userResponse.data);
 
         // I have mapped the response to AuthStore's User interface, including kycStatus and profileImage.
-        const userData: User = {
-          id: userResponse.data.id,
-          firstname: userResponse.data.firstname || "Guest",
-          lastname: userResponse.data.lastname || "",
-          email: userResponse.data.email,
-          profileImage: userResponse.data.profileImage || "",
-          token: userResponse.data.token ? userResponse.data.token : "",
-          kycStatus: userResponse.data.kycStatus || "not-started",
-          currency: userResponse.data.currency || "USD",
-          theme: userResponse.data.theme || "light",
-        };
+  const validateUser = (data: any): User | null => {
+  if (!data.id || !data.email) return null;
+  
+  return {
+    id: data.id,
+    firstname: data.firstname || "Guest",
+    lastname: data.lastname || "",
+    email: data.email,
+    password: data.password,
+    currency: data.currency || "USD",
+    theme: data.theme === "dark" ? "dark" : "light",
+    profileImage: data.profileImage || "",
+    kycStatus: data.kycStatus === "approved" ? "approved" : "not-started",
+    token: data.token || ""
+  };
+};
 
-        // I have stored the user in AuthStore to make user data and kycStatus visible.
-        setUser(userData);
-        console.log(`Register: User stored - User: ${JSON.stringify(userData)}`);
-
+const userData = validateUser(userResponse.data);
+if (userData) {
+  // Ensure token is always a string
+  setUser({ ...userData, token: userData.token ?? "" });
+} else {
+  console.error("Invalid user data");
+}
         return userResponse.data;
       } catch (error: any) {
         console.log("Register: Error during registration:", error.response?.data || error.message);
