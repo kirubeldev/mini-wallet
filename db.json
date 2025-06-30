@@ -1,92 +1,125 @@
 {
   "users": [
     {
-      "id": "uuid",
-      "firstname": "John",
-      "lastname": "Doe",
-      "email": "john.doe@example.com",
-      "password": "password",
-      "currency": "ETB",
+      "id": "413aca13-018a-447a-b592-05bd516b38db",
+      "firstname": "minte",
+      "lastname": "tekuame",
+      "email": "icogadmin@icog.et",
+      "password": "Error1@1",
+      "currency": "USD",
       "theme": "light",
       "profileImage": "",
-      "kycStatus": "approved",
-      "token": "token-here",
-      "createdAt": "2025-06-30T10:27:00.000Z"
+      "kycStatus": "not-started",
+      "kycData": null,
+      "token": "token-u7et8646s-1751258900808",
+      "createdAt": "2025-06-30T04:48:20.809Z"
     },
     {
-      "id": "a5cc8d45-f316-4a2d-b7c0-2ecf0ac6ff8f",
-      "firstname": "yon",
+      "id": "30a6b671-eeb6-4223-90dd-d84d02cf73ce",
+      "firstname": "minte",
+      "lastname": "tekuame",
+      "email": "icogadmin@icog.et1",
+      "password": "Error1@1",
+      "currency": "USD",
+      "theme": "light",
+      "profileImage": "https://media.licdn.com/dms/image/v2/D4E03AQEVMMTJnnAxqw/profile-displayphoto-shrink_100_100/profile-displayphoto-shrink_100_100/0/1731992711112?e=1756944000&v=beta&t=fI3Zku468Mhy_RAqhpBF87WZ3EkGopkftMRBApMtjY8",
+      "kycStatus": "approved",
+      "kycData": null,
+      "token": "token-6j1s0sqz7-1751260779691",
+      "createdAt": "2025-06-30T05:19:39.691Z"
+    },
+    {
+      "id": "94f749cc-8cff-4cd5-ac52-3d8bcb5e2699",
+      "firstname": "kirubel",
       "lastname": "tesnot",
-      "email": "john.doe@example.coms",
-      "password": "password",
+      "email": "kirubel.menberu@icog.et",
+      "password": "mikimikim",
       "currency": "USD",
       "theme": "light",
       "profileImage": "",
       "kycStatus": "approved",
       "kycData": null,
-      "token": "token-48jce8fqb-1751270424782",
-      "createdAt": "2025-06-30T08:00:24.782Z"
+      "token": "token-o1tpzj4t9-1751274835201",
+      "createdAt": "2025-06-30T09:13:55.203Z"
     }
   ],
   "wallets": [
     {
-      "id": "uuid",
-      "walletId": "uuid",
-      "userId": "uuid",
-      "accountNumber": "uuid",
+      "id": "ea94",
+      "walletId": "1d6cd98a-c2cd-4cfc-a52d-95291c91f59f",
+      "userId": "30a6b671-eeb6-4223-90dd-d84d02cf73ce",
+      "accountNumber": "c714fd8f-a183-4add-bfee-7edebea9cc2b",
       "balance": 0,
-      "createdAt": "2025-06-30T10:27:00.000Z"
+      "createdAt": "2025-06-30T05:20:49.869Z"
     },
     {
-      "id": "a50ddb8a-27f0-4247-8b55-337d44018606",
-      "walletId": "d6e208a1-65da-4cec-89f7-66ab01ae7ae9",
-      "userId": "4dbd4691-7741-4039-b1ae-15f0d04eed10",
-      "accountNumber": "35987d70-b850-4309-9d2e-d580a6d96753",
-      "balance": 2222,
-      "createdAt": "2025-06-30T07:56:48.078Z"
+      "id": "1246",
+      "walletId": "52782586-8dfd-42a5-b845-fc815e38a6bf",
+      "userId": "30a6b671-eeb6-4223-90dd-d84d02cf73ce",
+      "accountNumber": "175bbe33-083f-4f7f-93a7-b99bff9fe890",
+      "balance": 3000,
+      "createdAt": "2025-06-30T05:37:41.337Z"
     },
     {
-      "id": "39606edc-4e84-44af-ba01-aed5d16b7e5b",
-      "walletId": "1089c494-50d0-4178-b0b8-fa4b3b6471ac",
-      "userId": "a5cc8d45-f316-4a2d-b7c0-2ecf0ac6ff8f",
-      "accountNumber": "0250e7b5-0d71-4ae0-a2cb-6a07a1bc83dd",
-      "balance": 301,
-      "createdAt": "2025-06-30T08:01:26.759Z"
-    },
+      "id": "0c91",
+      "walletId": "cb67aefd-2140-48f2-9a2c-6b1e0a2b6352",
+      "userId": "94f749cc-8cff-4cd5-ac52-3d8bcb5e2699",
+      "accountNumber": "e675e969-8afa-4aa6-9b1a-652a97adc870",
+      "balance": 0,
+      "createdAt": "2025-06-30T09:22:45.797Z"
+    }
+  ],
+  "transactions": [
     {
-      "id": "6a4f4b59-5ac2-4a8c-a7e3-f0b4995a0ba1",
-      "walletId": "d7360d07-93c5-4ff9-8fea-353d33028d2a",
-      "userId": "a5cc8d45-f316-4a2d-b7c0-2ecf0ac6ff8f",
-      "accountNumber": "777d94c6-2979-4649-b40c-03536b4e34eb",
-      "balance": 500,
-      "createdAt": "2025-06-30T08:07:18.719Z"
+      "id": "tx1",
+      "userId": "94f749cc-8cff-4cd5-ac52-3d8bcb5e2699",
+      "fromWallet": "cb67aefd-2140-48f2-9a2c-6b1e0a2b6352",
+      "toWallet": "cb67aefd-2140-48f2-9a2c-6b1e0a2b6352",
+      "amount": 100,
+      "currency": "USD",
+      "serviceCharge": 0,
+      "type": "transfer",
+      "status": "success",
+      "reason": "Test transfer",
+      "timestamp": "2025-06-30T12:00:00.000Z"
     }
   ],
   "kyc": [
     {
-      "userId": "uuid",
-      "fullName": "John Doe",
-      "documentType": "national_id",
-      "documentNumber": "123456789",
+      "id": "a2f4",
+      "userId": "30a6b671-eeb6-4223-90dd-d84d02cf73ce",
+      "fullName": "sdfs",
+      "documentType": "passport",
+      "documentNumber": "sdfsf",
       "gender": "male",
-      "dob": "1990-01-01",
-      "address": "123 Main St",
-      "country": "ET",
-      "photoUrl": "https://example.com/photo.jpg",
-      "id": "1328"
+      "dob": "2000-06-06",
+      "address": "arabsa",
+      "country": "ZA",
+      "photoUrl": "https://media.licdn.com/dms/image/v2/D4E03AQEVMMTJnnAxqw/profile-displayphoto-shrink_100_100/profile-displayphoto-shrink_100_100/0/1731992711112?e=1756944000&v=beta&t=fI3Zku468Mhy_RAqhpBF87WZ3EkGopkftMRBApMtjY8"
     },
     {
-      "id": "6f53",
-      "userId": "a5cc8d45-f316-4a2d-b7c0-2ecf0ac6ff8f",
-      "fullName": "sdf",
+      "id": "1702",
+      "userId": "413aca13-018a-447a-b592-05bd516b38db",
+      "fullName": "sfs",
       "documentType": "passport",
-      "documentNumber": "sdf",
-      "gender": "female",
-      "dob": "1998-05-04",
-      "address": "sdf",
-      "country": "sdf",
-      "photoUrl": "https://media.licdn.com/dms/image/v2/D4E03AQEVMMTJnnAxqw/profile-displayphoto-shrink_100_100/profile-displayphoto-shrink_100_100/0/1731992711112?e=1756944000&v=beta&t=fI3Zku468Mhy_RAqhpBF87WZ3EkGopkftMRBApMtjY8",
-      "createdAt": "2025-06-30T08:01:26.716Z"
+      "documentNumber": "sdfsf",
+      "gender": "male",
+      "dob": "1992-06-10",
+      "address": "adfaf",
+      "country": "FR",
+      "photoUrl": "https://media.licdn.com/dms/image/v2/D4E03AQEVMMTJnnAxqw/profile-displayphoto-shrink_100_100/profile-displayphoto-shrink_100_100/0/1731992711112?e=1756944000&v=beta&t=fI3Zku468Mhy_RAqhpBF87WZ3EkGopkftMRBApMtjY8"
+    },
+    {
+      "id": "1629",
+      "userId": "94f749cc-8cff-4cd5-ac52-3d8bcb5e2699",
+      "fullName": "dsfsdf",
+      "documentType": "passport",
+      "documentNumber": "234",
+      "gender": "male",
+      "dob": "1989-07-12",
+      "address": "dfsd",
+      "country": "ZA",
+      "photoUrl": "https://media.licdn.com/dms/image/v2/D4E03AQEVMMTJnnAxqw/profile-displayphoto-shrink_100_100/profile-displayphoto-shrink_100_100/0/1731992711112?e=1756944000&v=beta&t=fI3Zku468Mhy_RAqhpBF87WZ3EkGopkftMRBApMtjY8"
     }
   ]
 }

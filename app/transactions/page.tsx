@@ -1,160 +1,280 @@
-"use client"
 
-import type React from "react"
-import { useState } from "react"
-import { useWalletStore } from "@/store/wallet-store"
-import Layout from "@/components/LayoutNavs"
-import { Button } from "@/components/ui/button"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+"use client";
+
+import type React from "react";
+import { useState, useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
+import { useAuthStore } from "@/store/AuthStore";
+import Layout from "@/components/LayoutNavs";
+import { Button } from "@/components/ui/button";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   MagnifyingGlassIcon,
   ArrowUpIcon,
   ArrowDownIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
-} from "@heroicons/react/24/outline"
-import { truncateText } from "@/lib/utils"
+} from "@heroicons/react/24/outline";
+import { truncateText } from "@/lib/utils";
+import Toast from "@/components/Toast";
+import Skeleton from "react-loading-skeleton";
+import { useTransactions } from "@/hooks/UseTransactionHook";
 
 export default function Transactions() {
-  const { transactions, wallets, transfer, transferToExternal, user, externalUsers } = useWalletStore()
-  const [searchTerm, setSearchTerm] = useState("")
-  const [filterStatus, setFilterStatus] = useState("all")
-  const [filterType, setFilterType] = useState("all")
-  const [sortField, setSortField] = useState("timestamp")
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc")
-  const [currentPage, setCurrentPage] = useState(1)
-  const [showTransferModal, setShowTransferModal] = useState(false)
+  const router = useRouter();
+  const { user } = useAuthStore();
+  const userId = useMemo(() => user?.id || null, [user?.id]);
+  const {
+    transactions,
+    transactionsError,
+    isLoadingTransactions,
+    senderWallets,
+    senderWalletsError,
+    isLoadingSenderWallets,
+    externalUsers,
+    usersError,
+    isLoadingUsers,
+    receiverWallets,
+    receiverWalletsError,
+    isLoadingReceiverWallets,
+    setExternalUserId,
+    transfer,
+    transferToExternal,
+    isMutating,
+    toast,
+    setToast,
+  } = useTransactions();
+
+  const [searchTerm, setSearchTerm] = useState("");
+  const [userSearchTerm, setUserSearchTerm] = useState("");
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [filterType, setFilterType] = useState("all");
+  const [sortField, setSortField] = useState("timestamp");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [showTransferModal, setShowTransferModal] = useState(false);
   const [transferData, setTransferData] = useState({
     fromWallet: "",
     toWallet: "",
     externalUser: "",
-    transferType: "internal", // "internal" or "external"
+    transferType: "internal",
     amount: "",
     reason: "",
     password: "",
-  })
+  });
 
-  const itemsPerPage = 10
+  const itemsPerPage = 10;
+
+  useEffect(() => {
+    console.log("Transactions useEffect: Running", { userId, kycStatus: user?.kycStatus, user });
+    if (!userId) {
+      console.log("Transactions: No userId, redirecting to login");
+      setToast({ message: "Please log in to view transactions.", type: "error" });
+      if (router.pathname !== "/login") {
+        router.replace("/login");
+      }
+      return;
+    }
+    if (user?.kycStatus !== "approved") {
+      console.log("Transactions: KYC not approved, redirecting to KYC");
+      setToast({ message: "KYC approval required.", type: "error" });
+      if (router.pathname !== "/kyc") {
+        router.replace("/kyc");
+      }
+      return;
+    }
+  }, [userId, user?.kycStatus, setToast, router]);
+
+  const filteredTransactions = useMemo(
+    () =>
+      transactions
+        .filter((transaction) => {
+          const fromWalletName =
+            transaction.fromWallet &&
+            (senderWallets.find((w) => w.walletId === transaction.fromWallet)?.accountNumber || "Unknown Wallet");
+          const toWalletName =
+            transaction.toWallet &&
+            (senderWallets.find((w) => w.walletId === transaction.toWallet)?.accountNumber ||
+              receiverWallets.find((w) => w.walletId === transaction.toWallet)?.accountNumber ||
+              "Unknown Wallet");
+          const matchesSearch =
+            (transaction.reason?.toLowerCase().includes(searchTerm.toLowerCase()) || false) ||
+            (fromWalletName && fromWalletName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+            (toWalletName && toWalletName.toLowerCase().includes(searchTerm.toLowerCase()));
+
+          const matchesStatus = filterStatus === "all" || transaction.status === filterStatus;
+          const matchesType = filterType === "all" || transaction.type === filterType;
+
+          return matchesSearch && matchesStatus && matchesType;
+        })
+        .sort((a, b) => {
+          let aValue: any = a[sortField as keyof typeof a];
+          let bValue: any = b[sortField as keyof typeof b];
+          if (sortField === "timestamp") {
+            aValue = new Date(aValue).getTime();
+            bValue = new Date(bValue).getTime();
+          }
+          return sortDirection === "asc" ? (aValue > bValue ? 1 : -1) : aValue < bValue ? 1 : -1;
+        }),
+    [transactions, searchTerm, filterStatus, filterType, sortField, sortDirection, senderWallets, receiverWallets]
+  );
+
+  const filteredUsers = useMemo(
+    () => externalUsers.filter((u) => u.name.toLowerCase().includes(userSearchTerm.toLowerCase())),
+    [externalUsers, userSearchTerm]
+  );
+
+  const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedTransactions = filteredTransactions.slice(startIndex, startIndex + itemsPerPage);
 
   const getWalletName = (walletId: string) => {
-    const wallet = wallets.find((w) => w.id === walletId)
-    return wallet ? wallet.name : "Unknown Wallet"
-  }
-
-  const filteredTransactions = transactions
-    .filter((transaction) => {
-      const matchesSearch =
-        transaction.reason?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        getWalletName(transaction.fromWallet || "")
-          .toLowerCase()
-          .includes(searchTerm.toLowerCase()) ||
-        getWalletName(transaction.toWallet || "")
-          .toLowerCase()
-          .includes(searchTerm.toLowerCase())
-
-      const matchesStatus = filterStatus === "all" || transaction.status === filterStatus
-      const matchesType = filterType === "all" || transaction.type === filterType
-
-      return matchesSearch && matchesStatus && matchesType
-    })
-    .sort((a, b) => {
-      let aValue: any = a[sortField as keyof typeof a]
-      let bValue: any = b[sortField as keyof typeof b]
-
-      if (sortField === "timestamp") {
-        aValue = new Date(aValue).getTime()
-        bValue = new Date(bValue).getTime()
-      }
-
-      if (sortDirection === "asc") {
-        return aValue > bValue ? 1 : -1
-      } else {
-        return aValue < bValue ? 1 : -1
-      }
-    })
-
-  const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage)
-  const startIndex = (currentPage - 1) * itemsPerPage
-  const paginatedTransactions = filteredTransactions.slice(startIndex, startIndex + itemsPerPage)
-
-  const handleSort = (field: string) => {
-    if (sortField === field) {
-      setSortDirection(sortDirection === "asc" ? "desc" : "asc")
-    } else {
-      setSortField(field)
-      setSortDirection("desc")
-    }
-  }
+    const wallet = senderWallets.find((w) => w.walletId === walletId) || receiverWallets.find((w) => w.walletId === walletId);
+    return wallet ? wallet.accountNumber : "Unknown Wallet";
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case "success":
-        return "text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/20"
+        return "text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/20";
       case "failed":
-        return "text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/20"
+        return "text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/20";
       case "not-started":
-        return "text-yellow-600 dark:text-yellow-400 bg-yellow-100 dark:bg-yellow-900/20"
+        return "text-yellow-600 dark:text-yellow-400 bg-yellow-100 dark:bg-yellow-900/20";
       default:
-        return "text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-900/20"
+        return "text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-900/20";
     }
-  }
+  };
 
   const getTypeIcon = (type: string) => {
     switch (type) {
       case "deposit":
-        return "⬇️"
+        return "⬇️";
       case "withdraw":
-        return "⬆️"
+        return "⬆️";
       case "transfer":
-        return "↔️"
+        return "↔️";
       default:
-        return "💰"
+        return "💰";
     }
-  }
+  };
+
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortDirection("desc");
+    }
+  };
 
   const handleTransfer = async (e: React.FormEvent) => {
-    e.preventDefault()
-
-    const amount = Number.parseFloat(transferData.amount)
-
-    if (transferData.transferType === "external") {
-      await transferToExternal(
-        transferData.fromWallet,
-        transferData.externalUser,
-        amount,
-        transferData.reason,
-        transferData.password,
-      )
-    } else {
-      await transfer(transferData.fromWallet, transferData.toWallet, amount, transferData.reason, transferData.password)
+    e.preventDefault();
+    const amount = Number.parseFloat(transferData.amount);
+    if (!transferData.fromWallet || amount <= 0 || isNaN(amount)) {
+      console.error("handleTransfer: Invalid input", { fromWallet: transferData.fromWallet, amount });
+      setToast({ message: "Select a wallet and valid amount.", type: "error" });
+      return;
+    }
+    if (transferData.transferType === "internal" && !transferData.toWallet) {
+      console.error("handleTransfer: No toWallet");
+      setToast({ message: "Select a destination wallet.", type: "error" });
+      return;
+    }
+    if (transferData.transferType === "external" && (!transferData.externalUser || !transferData.toWallet)) {
+      console.error("handleTransfer: No externalUser or toWallet");
+      setToast({ message: "Select a recipient and wallet.", type: "error" });
+      return;
+    }
+    if (!transferData.password) {
+      console.error("handleTransfer: No password");
+      setToast({ message: "Enter your password.", type: "error" });
+      return;
     }
 
-    setShowTransferModal(false)
-    setTransferData({
-      fromWallet: "",
-      toWallet: "",
-      externalUser: "",
-      transferType: "internal",
-      amount: "",
-      reason: "",
-      password: "",
-    })
+    try {
+      if (transferData.transferType === "external") {
+        await transferToExternal(
+          transferData.fromWallet,
+          transferData.externalUser,
+          amount,
+          transferData.reason,
+          transferData.password
+        );
+      } else {
+        await transfer(
+          transferData.fromWallet,
+          transferData.toWallet,
+          amount,
+          transferData.reason,
+          transferData.password
+        );
+      }
+      setShowTransferModal(false);
+      setTransferData({
+        fromWallet: "",
+        toWallet: "",
+        externalUser: "",
+        transferType: "internal",
+        amount: "",
+        reason: "",
+        password: "",
+      });
+      setUserSearchTerm("");
+      setExternalUserId(null);
+    } catch (error: any) {
+      console.error("handleTransfer: Error", error.message);
+      setToast({ message: error.message || "Transfer failed.", type: "error" });
+    }
+  };
+
+  if (!userId) {
+    return null;
+  }
+
+  if (isLoadingTransactions || isLoadingSenderWallets || isLoadingUsers) {
+    return (
+      <Layout>
+        <div className="space-y-6 p-6">
+          <Skeleton height={32} width={200} />
+          <Skeleton height={16} width={300} />
+          <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+            <Skeleton count={3} height={40} />
+          </div>
+          <div className="bg-white dark:bg-gray-800 shadow rounded-lg">
+            <Skeleton count={5} height={50} />
+          </div>
+        </div>
+      </Layout>
+    );
   }
 
   return (
     <Layout>
       <div className="space-y-6">
-        {/* Header */}
+        {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Transactions</h1>
             <p className="text-gray-600 dark:text-gray-400">View and manage your transaction history</p>
           </div>
-          <Button onClick={() => setShowTransferModal(true)}>Transfer Money</Button>
+          <Button onClick={() => setShowTransferModal(true)} disabled={isMutating || !senderWallets.length}>
+            Transfer Money
+          </Button>
         </div>
 
-        {/* Filters and Search */}
+        {transactionsError && (
+          <p className="text-red-600 dark:text-red-400">Error: {transactionsError}</p>
+        )}
+        {senderWalletsError && (
+          <p className="text-red-600 dark:text-red-400">Error: {senderWalletsError}</p>
+        )}
+        {usersError && <p className="text-red-600 dark:text-red-400">Error: {usersError}</p>}
+        {receiverWalletsError && (
+          <p className="text-red-600 dark:text-red-400">Error: {receiverWalletsError}</p>
+        )}
+
         <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
@@ -170,7 +290,6 @@ export default function Transactions() {
                 />
               </div>
             </div>
-
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Status</label>
               <select
@@ -181,10 +300,9 @@ export default function Transactions() {
                 <option value="all">All Status</option>
                 <option value="success">Success</option>
                 <option value="failed">Failed</option>
-                <option value="not-started">not-started</option>
+                <option value="not-started">Not Started</option>
               </select>
             </div>
-
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Type</label>
               <select
@@ -198,15 +316,14 @@ export default function Transactions() {
                 <option value="transfer">Transfer</option>
               </select>
             </div>
-
             <div className="flex items-end">
               <Button
                 variant="outline"
                 onClick={() => {
-                  setSearchTerm("")
-                  setFilterStatus("all")
-                  setFilterType("all")
-                  setCurrentPage(1)
+                  setSearchTerm("");
+                  setFilterStatus("all");
+                  setFilterType("all");
+                  setCurrentPage(1);
                 }}
                 className="w-full"
               >
@@ -216,7 +333,6 @@ export default function Transactions() {
           </div>
         </div>
 
-        {/* Transactions Table */}
         <div className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
           <div className="overflow-x-auto">
             <Table>
@@ -291,7 +407,9 @@ export default function Transactions() {
                       </TableCell>
                       <TableCell>
                         <span
-                          className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(transaction.status)}`}
+                          className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(
+                            transaction.status
+                          )}`}
                         >
                           {transaction.status}
                         </span>
@@ -309,8 +427,6 @@ export default function Transactions() {
               </TableBody>
             </Table>
           </div>
-
-          {/* Pagination */}
           {totalPages > 1 && (
             <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 dark:border-gray-700">
               <div className="text-sm text-gray-700 dark:text-gray-300">
@@ -344,7 +460,6 @@ export default function Transactions() {
           )}
         </div>
 
-        {/* Summary Stats */}
         {filteredTransactions.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
@@ -364,128 +479,190 @@ export default function Transactions() {
               </div>
             </div>
             <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
-              <div className="text-sm text-gray-500 dark:text-gray-400">not-started</div>
+              <div className="text-sm text-gray-500 dark:text-gray-400">Not Started</div>
               <div className="text-2xl font-bold text-yellow-600">
                 {filteredTransactions.filter((t) => t.status === "not-started").length}
               </div>
             </div>
           </div>
         )}
-      </div>
 
-      {/* Transfer Modal */}
-      <Dialog open={showTransferModal} onOpenChange={setShowTransferModal}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Transfer Money</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleTransfer} className="space-y-4">
-            {/* Transfer Type Selection */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Transfer Type</label>
-              <select
-                value={transferData.transferType}
-                onChange={(e) => setTransferData({ ...transferData, transferType: e.target.value })}
-                className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              >
-                <option value="internal">Between My Wallets</option>
-                <option value="external">To Other Users</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">From Wallet</label>
-              <select
-                value={transferData.fromWallet}
-                onChange={(e) => setTransferData({ ...transferData, fromWallet: e.target.value })}
-                className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              >
-                <option value="">Select wallet</option>
-                {wallets.map((wallet) => (
-                  <option key={wallet.id} value={wallet.id}>
-                    {wallet.name} - {wallet.balance} {wallet.currency}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {transferData.transferType === "internal" ? (
+        <Dialog open={showTransferModal} onOpenChange={setShowTransferModal}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Transfer Money</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleTransfer} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">To Wallet</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Transfer Type</label>
                 <select
-                  value={transferData.toWallet}
-                  onChange={(e) => setTransferData({ ...transferData, toWallet: e.target.value })}
+                  value={transferData.transferType}
+                  onChange={(e) => {
+                    setTransferData({ ...transferData, transferType: e.target.value, toWallet: "", externalUser: "" });
+                    setUserSearchTerm("");
+                    setExternalUserId(null);
+                  }}
                   className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 >
-                  <option value="">Select wallet</option>
-                  {wallets
-                    .filter((w) => w.id !== transferData.fromWallet)
-                    .map((wallet) => (
-                      <option key={wallet.id} value={wallet.id}>
-                        {wallet.name} - {wallet.balance} {wallet.currency}
-                      </option>
-                    ))}
+                  <option value="internal">Between My Wallets</option>
+                  <option value="external">To Other Users</option>
                 </select>
               </div>
-            ) : (
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">To User</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">From Wallet</label>
                 <select
-                  value={transferData.externalUser}
-                  onChange={(e) => setTransferData({ ...transferData, externalUser: e.target.value })}
+                  value={transferData.fromWallet}
+                  onChange={(e) => setTransferData({ ...transferData, fromWallet: e.target.value })}
                   className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  disabled={isLoadingSenderWallets || senderWallets.length === 0}
                 >
-                  <option value="">Select recipient</option>
-                  {externalUsers.map((user) => (
-                    <option key={user.id} value={user.id}>
-                      {user.name} - {user.bankName}
+                  <option value="">Select wallet</option>
+                  {senderWallets.map((wallet) => (
+                    <option key={wallet.walletId} value={wallet.walletId}>
+                      {wallet.accountNumber} - {wallet.balance} {wallet.currency}
                     </option>
                   ))}
                 </select>
+                {senderWalletsError && (
+                  <p className="mt-1 text-sm text-red-600">Error: {senderWalletsError}</p>
+                )}
               </div>
-            )}
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Amount</label>
-              <input
-                type="number"
-                step="0.01"
-                value={transferData.amount}
-                onChange={(e) => setTransferData({ ...transferData, amount: e.target.value })}
-                className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Reason</label>
-              <input
-                type="text"
-                value={transferData.reason}
-                onChange={(e) => setTransferData({ ...transferData, reason: e.target.value })}
-                className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                placeholder="Optional"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Password</label>
-              <input
-                type="password"
-                value={transferData.password}
-                onChange={(e) => setTransferData({ ...transferData, password: e.target.value })}
-                className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              />
-            </div>
-
-            <div className="flex justify-end space-x-3">
-              <Button type="button" variant="outline" onClick={() => setShowTransferModal(false)}>
-                Cancel
-              </Button>
-              <Button type="submit">Transfer</Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
+              {transferData.transferType === "internal" ? (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">To Wallet</label>
+                  <select
+                    value={transferData.toWallet}
+                    onChange={(e) => setTransferData({ ...transferData, toWallet: e.target.value })}
+                    className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    disabled={isLoadingSenderWallets || senderWallets.length < 2}
+                  >
+                    <option value="">Select wallet</option>
+                    {senderWallets
+                      .filter((w) => w.walletId !== transferData.fromWallet)
+                      .map((wallet) => (
+                        <option key={wallet.walletId} value={wallet.walletId}>
+                          {wallet.accountNumber} - {wallet.balance} {wallet.currency}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+              ) : (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Search User</label>
+                    <div className="relative">
+                      <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      <input
+                        type="text"
+                        placeholder="Search users..."
+                        value={userSearchTerm}
+                        onChange={(e) => setUserSearchTerm(e.target.value)}
+                        className="pl-10 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                        disabled={isLoadingUsers}
+                      />
+                    </div>
+                    {usersError && (
+                      <p className="mt-1 text-sm text-red-600">Error: {usersError}</p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">To User</label>
+                    <select
+                      value={transferData.externalUser}
+                      onChange={(e) => {
+                        setTransferData({ ...transferData, externalUser: e.target.value, toWallet: "" });
+                        setExternalUserId(e.target.value || null);
+                      }}
+                      className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      disabled={isLoadingUsers || externalUsers.length === 0}
+                    >
+                      <option value="">Select recipient</option>
+                      {filteredUsers.map((user) => (
+                        <option key={user.id} value={user.id}>
+                          {user.name} - {user.bankName}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">To Wallet</label>
+                    <select
+                      value={transferData.toWallet}
+                      onChange={(e) => setTransferData({ ...transferData, toWallet: e.target.value })}
+                      className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      disabled={isLoadingReceiverWallets || !transferData.externalUser || receiverWallets.length === 0}
+                    >
+                      <option value="">Select wallet</option>
+                      {receiverWallets.map((wallet) => (
+                        <option key={wallet.walletId} value={wallet.walletId}>
+                          {wallet.accountNumber} - {wallet.balance} {wallet.currency}
+                        </option>
+                      ))}
+                    </select>
+                    {receiverWalletsError && (
+                      <p className="mt-1 text-sm text-red-600">Error: {receiverWalletsError}</p>
+                    )}
+                  </div>
+                </>
+              )}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Amount</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={transferData.amount}
+                  onChange={(e) => setTransferData({ ...transferData, amount: e.target.value })}
+                  className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Reason</label>
+                <input
+                  type="text"
+                  value={transferData.reason}
+                  onChange={(e) => setTransferData({ ...transferData, reason: e.target.value })}
+                  className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  placeholder="Optional"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Password</label>
+                <input
+                  type="password"
+                  value={transferData.password}
+                  onChange={(e) => setTransferData({ ...transferData, password: e.target.value })}
+                  className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                />
+              </div>
+              <div className="flex justify-end space-x-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setShowTransferModal(false);
+                    setUserSearchTerm("");
+                    setExternalUserId(null);
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={
+                    isMutating ||
+                    !transferData.fromWallet ||
+                    (transferData.transferType === "internal" && !transferData.toWallet) ||
+                    (transferData.transferType === "external" && (!transferData.externalUser || !transferData.toWallet)) ||
+                    !transferData.password
+                  }
+                >
+                  Transfer
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </div>
     </Layout>
-  )
+  );
 }
