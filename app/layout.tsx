@@ -1,23 +1,16 @@
-import type React from "react"
-import type { Metadata } from "next"
-import { Inter } from "next/font/google"
-import "./globals.css"
+import { Inter } from "next/font/google";
+import "./globals.css";
 
-const inter = Inter({ subsets: ["latin"] })
+const inter = Inter({ subsets: ["latin"] });
 
-export const metadata: Metadata = {
-  title: "Mini Wallet System",
-  description: "A comprehensive wallet management system",
-}
+export const metadata = {
+  title: "Mini Wallet Managment",
+  description: "A simple wallet management web app",
+};
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" data-darkreader-mode="disabled">
       <body className={inter.className}>{children}</body>
     </html>
-  )
-}
+  )}

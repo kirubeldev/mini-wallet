@@ -9,15 +9,15 @@
       "currency": "USD",
       "theme": "light",
       "profileImage": "",
-      "kycStatus": "approved",
+      "kycStatus": "not-started",
       "kycData": null,
       "token": "token-u7et8646s-1751258900808",
       "createdAt": "2025-06-30T04:48:20.809Z"
     },
     {
-      "id": "5a319ed7-4562-450f-9f03-dc1b3716388f",
-      "firstname": "miretu",
-      "lastname": "minte",
+      "id": "30a6b671-eeb6-4223-90dd-d84d02cf73ce",
+      "firstname": "minte",
+      "lastname": "tekuame",
       "email": "icogadmin@icog.et1",
       "password": "Error1@1",
       "currency": "USD",
@@ -25,52 +25,40 @@
       "profileImage": "",
       "kycStatus": "approved",
       "kycData": null,
-      "token": "token-kp0dy6me4-1751259057638",
-      "createdAt": "2025-06-30T04:50:57.639Z"
+      "token": "token-6j1s0sqz7-1751260779691",
+      "createdAt": "2025-06-30T05:19:39.691Z"
     }
   ],
   "wallets": [
     {
-      "id": "80a1",
-      "walletId": "a51f5572-4d1c-44c0-99a4-73211fd029fa",
-      "userId": "413aca13-018a-447a-b592-05bd516b38db",
-      "accountNumber": "735240ed-fca4-48c3-8423-43dbb667cfb5",
+      "id": "ea94",
+      "walletId": "1d6cd98a-c2cd-4cfc-a52d-95291c91f59f",
+      "userId": "30a6b671-eeb6-4223-90dd-d84d02cf73ce",
+      "accountNumber": "c714fd8f-a183-4add-bfee-7edebea9cc2b",
       "balance": 0,
-      "createdAt": "2025-06-30T04:50:10.646Z"
+      "createdAt": "2025-06-30T05:20:49.869Z"
     },
     {
-      "id": "256d",
-      "walletId": "8a0100af-de35-4182-b0e2-154156416663",
-      "userId": "5a319ed7-4562-450f-9f03-dc1b3716388f",
-      "accountNumber": "25a03d48-64d7-4cf3-b46e-acbeea928d52",
-      "balance": 0,
-      "createdAt": "2025-06-30T04:51:31.820Z"
+      "id": "1246",
+      "walletId": "52782586-8dfd-42a5-b845-fc815e38a6bf",
+      "userId": "30a6b671-eeb6-4223-90dd-d84d02cf73ce",
+      "accountNumber": "175bbe33-083f-4f7f-93a7-b99bff9fe890",
+      "balance": 3000,
+      "createdAt": "2025-06-30T05:37:41.337Z"
     }
   ],
   "transactions": [],
   "kyc": [
     {
-      "id": "8d4c",
-      "userId": "413aca13-018a-447a-b592-05bd516b38db",
-      "fullName": "dfgd",
-      "documentType": "driver_license",
+      "id": "a2f4",
+      "userId": "30a6b671-eeb6-4223-90dd-d84d02cf73ce",
+      "fullName": "sdfs",
+      "documentType": "passport",
       "documentNumber": "sdfsf",
       "gender": "male",
-      "dob": "1996-11-13",
-      "address": "sdfss",
-      "country": "IN",
-      "photoUrl": "https://media.licdn.com/dms/image/v2/D4E03AQEVMMTJnnAxqw/profile-displayphoto-shrink_100_100/profile-displayphoto-shrink_100_100/0/1731992711112?e=1756944000&v=beta&t=fI3Zku468Mhy_RAqhpBF87WZ3EkGopkftMRBApMtjY8"
-    },
-    {
-      "id": "adaa",
-      "userId": "5a319ed7-4562-450f-9f03-dc1b3716388f",
-      "fullName": "sfssdfsf",
-      "documentType": "passport",
-      "documentNumber": "sdfs",
-      "gender": "male",
-      "dob": "1991-05-30",
-      "address": "sefsdfs",
-      "country": "AU",
+      "dob": "2000-06-06",
+      "address": "arabsa",
+      "country": "ZA",
       "photoUrl": "https://media.licdn.com/dms/image/v2/D4E03AQEVMMTJnnAxqw/profile-displayphoto-shrink_100_100/profile-displayphoto-shrink_100_100/0/1731992711112?e=1756944000&v=beta&t=fI3Zku468Mhy_RAqhpBF87WZ3EkGopkftMRBApMtjY8"
     }
   ]
