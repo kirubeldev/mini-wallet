@@ -3,7 +3,6 @@ import useSWRMutation from "swr/mutation";
 import axiosInstance from "@/lib/axios-Instance";
 import { useAuthStore } from "@/store/AuthStore";
 
-// I have defined the User interface to match the JSON server and AuthStore, including kycStatus and profileImage, removing minBalance.
 interface User {
   id: string;
   firstname: string;

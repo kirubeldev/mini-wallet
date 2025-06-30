@@ -1,0 +1,14 @@
+version: "3.9"
+
+services:
+  mini-wallet:
+    build: .
+    container_name: mini-wallet-app
+    ports:
+      - "3000:3000"
+      - "4000:4000"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=production

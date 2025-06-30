@@ -1,10 +1,53 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-## Getting Started
+# 💰 Mini Wallet App
 
-First, run the development server:
+A modern wallet management app built with **Next.js 15**, **Tailwind CSS**, **Zustand**, and **json-server**. It features user authentication, wallet display with balance alerts, dark mode, and mock API integration.
+
+---
+
+## 🚀 Features
+
+- User registration, login, and auto-login with cookies
+- Wallet display with low-balance alerts
+- Light/Dark theme support
+- Zustand for global state
+- SWR for API mutations and fetch
+- Jest setup for testing hooks
+
+---
+
+## 📦 Tech Stack
+
+Next.js · Tailwind CSS · Zustand · SWR · json-server · Jest
+
+---
+
+## 📂 Structure Overview
+
+- `app/dashboard/page.tsx` – Dashboard route
+- `components/ATMCard.tsx` – Wallet card
+- `components/dashboard/Dashboard.tsx` – Page logic
+- `hooks/useAuth.ts` – Custom auth hooks (login, register, auto-login)
+- `store/AuthStore.ts` – Zustand store
+- `db.json` – Mock backend for users/wallets
+
+---
+
+## ⚙️ Setup & Run
 
 ```bash
+npm install
+npm run dev 
+
+for the rundev i have alredy set up the jeson server s when you run the run dev you will get the db.server runn too, it is et up in the package.json file
+
+
+  //  "dev": "concurrently \"next dev\" \"json-server --watch db.json --port 4000\"",
+
+
+
+
+
 npm run dev
 # or
 yarn dev

@@ -2,6 +2,8 @@
 import { create } from "zustand";
 
 export interface User {
+  lastname: any;
+  firstname: any;
   id: string;
   firstName: string;
   lastName: string;

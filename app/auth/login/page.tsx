@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useLogin } from "@/hooks/UseAuthHook"; 
-import Toast from "@/components/Toast";
+import Toast from "@/components/ui/Toast";
 
 // I have updated the Login page to use useLogin hook, validate inputs, and redirect based on kycStatus.
 export default function Login() {
@@ -98,7 +98,7 @@ export default function Login() {
           <div className="text-center">
             <span className="text-sm text-gray-600 dark:text-gray-400">
               Don't have an account?{" "}
-              <Link href="/register" className="font-medium text-blue-600 hover:text-blue-500">
+              <Link href="/auth/register" className="font-medium text-blue-600 hover:text-blue-500">
                 Sign up
               </Link>
             </span>

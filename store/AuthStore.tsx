@@ -2,6 +2,7 @@ import { create } from "zustand";
 
 // I have defined the User interface to match the JSON server user structure, including token and kycStatus.
 interface User {
+  profileImage: any;
   id: string;
   firstname: string;
   lastname: string;

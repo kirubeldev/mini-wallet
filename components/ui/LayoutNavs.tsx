@@ -45,13 +45,13 @@ export default function Layout({ children }: LayoutProps) {
     { name: "Settings", href: "/settings", icon: Cog6ToothIcon },
   ];
 
-  // I have updated the logout handler to clear the token cookie and Zustand store, then redirect to /login.
+  // I have updated the logout handler to clear the token cookie and Zustand store, then redirect to /auth/login.
   const handleLogout = () => {
     console.log(`Logout: Clearing user - User: ${JSON.stringify(user)}, Token: ${user?.token || 'none'}`);
     setUser(null); // I have cleared the user from the Zustand store.
     document.cookie = 'token=; path=/; max-age=0'; // I have cleared the token cookie.
     setUserMenuOpen(false);
-    router.push("/login");
+    router.push("/auth/login");
   };
  if (isAutoLoginLoading) {
     return (
@@ -152,7 +152,6 @@ export default function Layout({ children }: LayoutProps) {
                 className="p-2 rounded-md text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors"
                 title={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
               >
-                {theme === "light" ? <MoonIcon className="h-5 w-5" /> : <SunIcon className="h-5 w-5" />}
               </button>
 
               {/* User Menu */}

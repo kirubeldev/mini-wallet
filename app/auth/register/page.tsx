@@ -6,10 +6,9 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useTheme } from "@/hooks/UseTheamHook";
 import { useAuthStore } from "@/store/AuthStore";
-import Toast from "@/components/Toast";
 import { useAutoLogin, useRegister } from "@/hooks/UseAuthHook";
+import { Toaster, toast } from "react-hot-toast";
 
-// I have defined the User interface to match the JSON server and AuthStore, including kycStatus and profileImage, removing minBalance.
 interface User {
   id: string;
   firstname: string;
@@ -23,7 +22,6 @@ interface User {
   token?: string;
 }
 
-// I have updated Register.tsx to remove profileImage field, remove wallet creation, and redirect to /kyc.
 export default function Register() {
   const { register } = useRegister();
   const { setUser } = useAuthStore();
@@ -37,9 +35,7 @@ export default function Register() {
     password: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
-  // I have updated validateForm to remove profileImage validation and minBalance.
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
     if (!formData.firstName.trim()) newErrors.firstName = "First name is required";
@@ -47,12 +43,11 @@ export default function Register() {
     if (!formData.email.trim()) newErrors.email = "Email is required";
     else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = "Email is invalid";
     if (!formData.password) newErrors.password = "Password is required";
-    else if (formData.password.length < 6) newErrors.password = "Password must be at least 6 characters";
+    else if (!/^\d{6}$/.test(formData.password)) newErrors.password = "Password must be exactly 6 digits";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  // I have updated handleSubmit to remove wallet creation and redirect to /kyc.
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
@@ -63,7 +58,6 @@ export default function Register() {
         email: formData.email,
         password: formData.password,
       });
-      // I have stored the registered user, including kycStatus and profileImage, in the Zustand store.
       setUser({
         id: userData.id,
         firstname: userData.firstname,
@@ -72,24 +66,46 @@ export default function Register() {
         profileImage: userData.profileImage || "",
         token: userData.token,
         kycStatus: userData.kycStatus || "not-started",
-        currency: userData.currency || "USD",
+        currency: "USD",
         theme: userData.theme || "light",
       });
-      // I have set the token in a cookie for middleware authentication and auto-login.
       document.cookie = `token=${userData.token}; path=/; max-age=${60 * 60 * 24 * 7}`;
       console.log(`Register: User registered - User: ${JSON.stringify(userData)}, Token: ${userData.token}`);
 
-      setToast({ message: "Registration successful! Please complete KYC.", type: "success" });
+      toast.success("Registration successful! Please complete KYC.", {
+        style: {
+          minWidth: "300px",
+          maxWidth: "500px",
+          width: "100%",
+          padding: "16px",
+          borderRadius: "8px",
+          background: theme === "dark" ? "#1f2937" : "#ffffff",
+          color: theme === "dark" ? "#ffffff" : "#1f2937",
+          border: theme === "dark" ? "1px solid #374151" : "1px solid #e5e7eb",
+          wordBreak: "break-word",
+        },
+      });
       setTimeout(() => {
         router.push("/kyc");
       }, 1000);
     } catch (error: any) {
       console.log(`Register: Error - ${error.message}`);
-      setToast({ message: error.message || "Registration failed. Please try again.", type: "error" });
+      toast.error(error.message || "Registration failed. Please try again.", {
+        style: {
+          minWidth: "300px",
+          maxWidth: "500px",
+          width: "100%",
+          padding: "16px",
+          borderRadius: "8px",
+          background: theme === "dark" ? "#1f2937" : "#ffffff",
+          color: theme === "dark" ? "#ffffff" : "#1f2937",
+          border: theme === "dark" ? "1px solid #374151" : "1px solid #e5e7eb",
+          wordBreak: "break-word",
+        },
+      });
     }
   };
 
-  // I have kept the loading state for auto-login to prevent form rendering during user fetch.
   if (isAutoLoginLoading) {
     return <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">Loading...</div>;
   }
@@ -99,6 +115,7 @@ export default function Register() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
+      <Toaster position="top-center" />
       <div className="max-w-md w-full space-y-8">
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900 dark:text-white">
@@ -151,14 +168,20 @@ export default function Register() {
             </div>
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Password
+                Password (6 digits)
               </label>
               <input
                 id="password"
-                type="password"
+                type="text"
                 value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/\D/g, "");
+                  if (value.length <= 6) {
+                    setFormData({ ...formData, password: value });
+                  }
+                }}
                 className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 px-4 py-2"
+                placeholder="Enter 6-digit password"
               />
               {errors.password && <p className="mt-1 text-sm text-red-600">{errors.password}</p>}
             </div>
@@ -174,14 +197,13 @@ export default function Register() {
           <div className="text-center">
             <span className="text-sm text-gray-600 dark:text-gray-400">
               Already have an account?{" "}
-              <Link href="/login" className="font-medium text-blue-600 hover:text-blue-500">
+              <Link href="/auth/login" className="font-medium text-blue-600 hover:text-blue-500">
                 Sign in
               </Link>
             </span>
           </div>
         </form>
       </div>
-      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </div>
   );
 }

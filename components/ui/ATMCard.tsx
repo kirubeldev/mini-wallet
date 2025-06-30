@@ -53,7 +53,7 @@ export default function ATMCard({
         <p className="text-blue-200 text-sm mb-1">Available Balance</p>
         <div className="flex items-center justify-between">
           <div className="text-2xl font-bold">
-            {balanceVisible ? `${account.balance.toFixed(2)} ${account.currency}` : "••••••"}
+            {balanceVisible ? `${account.balance.toFixed(2)} USD` : "••••••"}
           </div>
           <button
             onClick={onToggleBalance}

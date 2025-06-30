@@ -1,19 +1,19 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import toast from 'react-hot-toast';
-import Toast from './components/Toast';
+import Toast from './components/ui/Toast';
 
 // I have defined public routes that do not require authentication.
-const publicRoutes = ['/login', '/register'];
+const publicRoutes = ['/auth/login', '/auth/register'];
 
 // I have defined protected routes that require a token.
 const protectedRoutes = ['/dashboard', '/accounts', '/kyc', '/settings', '/transactions', '/wallet'];
 
-// I have created a middleware to check for a token from cookies and redirect to /login for protected routes.
+// I have created a middleware to check for a token from cookies and redirect to /auth/login for protected routes.
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // I have allowed access to public routes (/login and /register) without checking for a token.
+  // I have allowed access to public routes (/auth/login and /auth/register) without checking for a token.
   if (publicRoutes.includes(pathname)) {
     console.log(`Middleware: Allowing public route ${pathname}`);
     return NextResponse.next();
@@ -26,10 +26,10 @@ export function middleware(request: NextRequest) {
 
     // I have logged the token and user check for debugging purposes.
 
-    // I have redirected to /login if no token is found for protected routes.
+    // I have redirected to /auth/login if no token is found for protected routes.
     if (!token) {
-      console.log(`Middleware: No token, redirecting to /login from ${pathname}`);
-      return NextResponse.redirect(new URL('/login', request.url));
+      console.log(`Middleware: No token, redirecting to /auth/login from ${pathname}`);
+      return NextResponse.redirect(new URL('/auth/login', request.url));
     }
 
     // I have allowed the request to proceed if a token is found.
