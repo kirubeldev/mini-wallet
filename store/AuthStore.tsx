@@ -1,6 +1,7 @@
 import { create } from "zustand";
 // In your AuthStore file (or at the top of this file)
 interface User {
+  KycStatus: string;
   id: string;
   firstname: string;
   lastname: string;

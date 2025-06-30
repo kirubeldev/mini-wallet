@@ -39,6 +39,16 @@ Next.js · Tailwind CSS · Zustand · SWR · json-server · Jest
 npm install
 npm run dev 
 
+
+
+
+📦 Services
+app — Next.js development server (http://localhost:3000)
+
+api — json-server for fake REST API (http://localhost:4000)
+
+
+
 for the rundev i have alredy set up the jeson server s when you run the run dev you will get the db.server runn too, it is et up in the package.json file
 
 

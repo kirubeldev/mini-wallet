@@ -202,7 +202,7 @@ export const useWallets = (transferToUserId?: string) => {
         // Refresh wallet data
         await fetchWallets();
         setToast({
-          message: `Wallet created successfully with initial balance of ${initialBalance} ${user.currency || "USD"}!`,
+          message: `Wallet created successfully with initial balance of ${initialBalance} ${user.currency || "ETB"}!`,
           type: "success",
         });
         return response.data;
@@ -271,7 +271,7 @@ export const useWallets = (transferToUserId?: string) => {
 
         await fetchWallets();
         setToast({
-          message: `Deposited ${amount} ${user.currency || "USD"} to wallet successfully!`,
+          message: `Deposited ${amount} ${user.currency || "ETB"} to wallet successfully!`,
           type: "success",
         });
         return patchResponse.data;
@@ -364,7 +364,7 @@ export const useWallets = (transferToUserId?: string) => {
 
         await fetchWallets();
         setToast({
-          message: `Transferred ${amount} ${user.currency || "USD"} between wallets successfully!`,
+          message: `Transferred ${amount} ${user.currency || "ETB"} between wallets successfully!`,
           type: "success",
         });
         return { fromPatchResponse, toPatchResponse };
@@ -457,7 +457,7 @@ export const useWallets = (transferToUserId?: string) => {
 
         await fetchWallets();
         setToast({
-          message: `Transferred ${amount} ${user.currency || "USD"} to user wallet successfully!`,
+          message: `Transferred ${amount} ${user.currency || "ETB"} to user wallet successfully!`,
           type: "success",
         });
         return { fromPatchResponse, toPatchResponse };

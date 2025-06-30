@@ -1,14 +1,26 @@
-version: "3.9"
+version: "3.8"
 
 services:
-  mini-wallet:
-    build: .
+  app:
+    build:
+      context: .
     container_name: mini-wallet-app
     ports:
       - "3000:3000"
-      - "4000:4000"
     volumes:
       - .:/app
-      - /app/node_modules
+    depends_on:
+      - api
     environment:
-      - NODE_ENV=production
+      - NODE_ENV=development
+    command: npm run dev
+
+  api:
+    image: node:18
+    container_name: mini-wallet-api
+    working_dir: /app
+    volumes:
+      - .:/app
+    ports:
+      - "4000:4000"
+    command: sh -c "npm install -g json-server && json-server --watch db.json --port 4000"

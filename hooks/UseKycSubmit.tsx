@@ -108,6 +108,7 @@ export const useKycSubmit = () => {
           email: updatedUser.email,
           token: updatedUser.token ?? "",
           kycStatus: updatedUser.kycStatus || "approved",
+          KycStatus: updatedUser.KycStatus || updatedUser.kycStatus || "approved",
           profileImage: updatedUser.profileImage ?? null,
           currency: updatedUser.currency || "USD",
           theme: updatedUser.theme || "light",

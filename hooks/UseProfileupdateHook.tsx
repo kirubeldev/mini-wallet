@@ -56,7 +56,11 @@ export const useProfileUpdate = () => {
       try {
         console.log(`useProfileUpdate: Updating profile for user ${user.id} - Email: ${email}, ProfileImage: ${profileImage}`);
         const updatedUser = await trigger({ userId: user.id, email, profileImage });
-        setUser({ ...user, email: updatedUser.email, profileImage: updatedUser.profileImage });
+        setUser({ 
+          ...user, 
+          email: updatedUser.email ?? user.email, 
+          profileImage: updatedUser.profileImage ?? user.profileImage 
+        });
         setToast({
           message: "Profile updated successfully!",
           type: "success",

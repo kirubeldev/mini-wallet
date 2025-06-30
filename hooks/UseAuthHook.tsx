@@ -109,6 +109,7 @@ export const useAutoLogin = () => {
           email: fetchedUser.email,
           token: fetchedUser.token ?? "",
           kycStatus: fetchedUser.kycStatus || "not-started",
+          KycStatus: fetchedUser.kycStatus || "", // Add this line to satisfy the interface
           currency: fetchedUser.currency || "USD",
           theme: fetchedUser.theme || "light",
           profileImage: fetchedUser.profileImage || "",
@@ -184,6 +185,7 @@ export const useLogin = () => {
           email: fullUserData.email,
           token: fullUserData.token ?? "",
           kycStatus: fullUserData.kycStatus || "not-started",
+          KycStatus: fullUserData.kycStatus || "", // Add this line to satisfy the interface
           profileImage: fullUserData.profileImage || "",
           currency: fullUserData.currency || "USD",
           theme: fullUserData.theme || "light",
