@@ -5,17 +5,30 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useTheme } from "@/hooks/UseTheamHook";
-
 import { useAuthStore } from "@/store/AuthStore";
 import Toast from "@/components/Toast";
 import { useAutoLogin, useRegister } from "@/hooks/UseAuthHook";
 
-// I have updated Register.tsx to integrate useAutoLogin for persistence, fix kycStatus in handleSubmit, and remove KYC fields.
+// I have defined the User interface to match the JSON server and AuthStore, including kycStatus and profileImage, removing minBalance.
+interface User {
+  id: string;
+  firstname: string;
+  lastname: string;
+  email: string;
+  password?: string;
+  currency: string;
+  theme: "light" | "dark";
+  profileImage?: string;
+  kycStatus: "not-started" | "approved";
+  token?: string;
+}
+
+// I have updated Register.tsx to remove profileImage field, pass empty string for profileImage in register, and remove minBalance.
 export default function Register() {
   const { register } = useRegister();
   const { setUser } = useAuthStore();
   const { theme, setTheme } = useTheme();
-  const { isLoading: isAutoLoginLoading, error: autoLoginError } = useAutoLogin(); // I have added useAutoLogin to restore user data on refresh.
+  const { isLoading: isAutoLoginLoading, error: autoLoginError } = useAutoLogin();
   const router = useRouter();
   const [formData, setFormData] = useState({
     firstName: "",
@@ -26,7 +39,7 @@ export default function Register() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
-  // I have kept validateForm to check only basic user fields, removing KYC-related validation.
+  // I have updated validateForm to remove profileImage validation and minBalance.
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
     if (!formData.firstName.trim()) newErrors.firstName = "First name is required";
@@ -39,7 +52,7 @@ export default function Register() {
     return Object.keys(newErrors).length === 0;
   };
 
-  // I have updated handleSubmit to use kycStatus for redirection and include kycStatus in setUser.
+  // I have updated handleSubmit to remove profileImage and ensure token is handled correctly.
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
@@ -50,21 +63,23 @@ export default function Register() {
         email: formData.email,
         password: formData.password,
       });
-      // I have stored the registered user, including kycStatus, in the Zustand store.
+      // I have stored the registered user, including kycStatus and profileImage, in the Zustand store.
       setUser({
         id: userData.id,
         firstname: userData.firstname,
         lastname: userData.lastname,
         email: userData.email,
+        profileImage: userData.profileImage || "",
         token: userData.token,
         kycStatus: userData.kycStatus || "not-started",
+        currency: userData.currency || "USD",
+        theme: userData.theme || "light",
       });
       // I have set the token in a cookie for middleware authentication and auto-login.
       document.cookie = `token=${userData.token}; path=/; max-age=${60 * 60 * 24 * 7}`;
       console.log(`Register: User registered - User: ${JSON.stringify(userData)}, Token: ${userData.token}`);
       setToast({ message: "Registration successful!", type: "success" });
       setTimeout(() => {
-        // I have fixed to use kycStatus instead of status for redirection.
         router.push(userData.kycStatus === "approved" ? "/dashboard" : "/kyc");
       }, 1000);
     } catch (error: any) {
@@ -73,7 +88,7 @@ export default function Register() {
     }
   };
 
-  // I have added a loading state for auto-login to prevent form rendering during user fetch.
+  // I have kept the loading state for auto-login to prevent form rendering during user fetch.
   if (isAutoLoginLoading) {
     return <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">Loading...</div>;
   }

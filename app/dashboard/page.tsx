@@ -105,7 +105,7 @@ export default function Dashboard() {
                   </dt>
                   <dd className="flex items-center">
                     <div className="text-lg font-medium text-gray-900 dark:text-white">
-                      {balanceVisible ? `${totalBalance.toFixed(2)} ${user?.currency || "ETB"}` : "••••••"}
+                      {balanceVisible ? `${totalBalance.toFixed(2)} ${user?.currency || "USD"}` : "••••••"}
                     </div>
                     <button
                       onClick={toggleBalanceVisibility}
@@ -237,7 +237,7 @@ export default function Dashboard() {
         accountName={lowBalanceDialog.wallet?.name || ""}
         currentBalance={lowBalanceDialog.wallet?.balance || 0}
         minBalance={user?.minBalance || 100}
-        currency={lowBalanceDialog.wallet?.currency || user?.currency || "ETB"}
+        currency={lowBalanceDialog.wallet?.currency || user?.currency || "USD"}
       />
     </Layout>
   )

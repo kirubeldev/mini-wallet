@@ -10,11 +10,10 @@ interface User {
   firstname: string;
   lastname: string;
   email: string;
-  password: string;
+  password?: string;
   currency: string;
   theme: "light" | "dark";
   profileImage?: string;
-  minBalance: number;
   kycStatus: "not-started" | "approved";
   token?: string;
 }
@@ -201,6 +200,7 @@ export const useLogin = () => {
 };
 
 // I have updated the useRegister hook to generate a UUID for user.id and include kycStatus.
+
 export const useRegister = () => {
   const { setUser } = useAuthStore();
 
@@ -231,25 +231,25 @@ export const useRegister = () => {
           lastname: formData.lastName,
           email: formData.email,
           password: formData.password,
-          currency: "ETB",
+          currency: "USD",
           theme: "light",
-          minBalance: 0,
+          profileImage: "",
           kycStatus: "not-started",
           kycData: null,
           token,
           createdAt: new Date().toISOString(),
         });
 
-        // I have posted the user data to /users, including kycStatus and UUID.
+        // I have posted the user data to /users, including profileImage as empty string and kycStatus.
         const userResponse = await axiosInstance.post("/users", {
           id: userId,
           firstname: formData.firstName,
           lastname: formData.lastName,
           email: formData.email,
           password: formData.password,
-          currency: "ETB",
+          currency: "USD",
           theme: "light",
-          minBalance: 0,
+          profileImage: "",
           kycStatus: "not-started",
           kycData: null,
           token,
@@ -259,14 +259,17 @@ export const useRegister = () => {
         // I have logged the user POST response.
         console.log("Register: POST response:", userResponse.data);
 
-        // I have mapped the response to AuthStore's User interface, including kycStatus.
-        const userData = {
+        // I have mapped the response to AuthStore's User interface, including kycStatus and profileImage.
+        const userData: User = {
           id: userResponse.data.id,
           firstname: userResponse.data.firstname || "Guest",
           lastname: userResponse.data.lastname || "",
           email: userResponse.data.email,
+          profileImage: userResponse.data.profileImage || "",
           token: userResponse.data.token,
           kycStatus: userResponse.data.kycStatus || "not-started",
+          currency: userResponse.data.currency || "USD",
+          theme: userResponse.data.theme || "light",
         };
 
         // I have stored the user in AuthStore to make user data and kycStatus visible.

@@ -185,7 +185,7 @@ export default function KYC() {
   const getStatusMessage = () => {
     switch (user?.kycStatus) {
       case "approved":
-        return "Your identity has been verified successfully. You can now access all features.";
+        return "Your identity has been verified successfully. You now have full access.";
       case "not-started":
       default:
         return "Please complete your KYC verification to unlock all features including transfers.";
