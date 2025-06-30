@@ -1,59 +1,76 @@
 {
   "users": [
     {
-      "id": "f51d564e-4317-456c-a92b-6025e51ee548",
-      "firstname": "kirubel",
-      "lastname": "tesnot",
-      "email": "icogadmin@icog.etsdfsfsff",
-      "password": "Error1@1",
-      "currency": "USD",
-      "theme": "light",
-      "profileImage": "https://media.licdn.com/dms/image/v2/D4E03AQEVMMTJnnAxqw/profile-displayphoto-shrink_100_100/profile-displayphoto-shrink_100_100/0/1731992711112?e=1756944000&v=beta&t=fI3Zku468Mhy_RAqhpBF87WZ3EkGopkftMRBApMtjY8",
-      "kycStatus": "approved",
-      "kycData": null,
-      "token": "token-3ma41r2xy-1751255784079",
-      "createdAt": "2025-06-30T03:56:24.080Z"
-    },
-    {
-      "id": "fe525446-8df4-40da-905d-ac8897f816fa",
+      "id": "413aca13-018a-447a-b592-05bd516b38db",
       "firstname": "minte",
-      "lastname": "minte",
+      "lastname": "tekuame",
       "email": "icogadmin@icog.et",
       "password": "Error1@1",
       "currency": "USD",
       "theme": "light",
-      "profileImage": "https://media.licdn.com/dms/image/v2/D4E03AQEVMMTJnnAxqw/profile-displayphoto-shrink_100_100/profile-displayphoto-shrink_100_100/0/1731992711112?e=1756944000&v=beta&t=fI3Zku468Mhy_RAqhpBF87WZ3EkGopkftMRBApMtjY8",
+      "profileImage": "",
       "kycStatus": "approved",
       "kycData": null,
-      "token": "token-u0i412spa-1751255998801",
-      "createdAt": "2025-06-30T03:59:58.801Z"
+      "token": "token-u7et8646s-1751258900808",
+      "createdAt": "2025-06-30T04:48:20.809Z"
+    },
+    {
+      "id": "5a319ed7-4562-450f-9f03-dc1b3716388f",
+      "firstname": "miretu",
+      "lastname": "minte",
+      "email": "icogadmin@icog.et1",
+      "password": "Error1@1",
+      "currency": "USD",
+      "theme": "light",
+      "profileImage": "",
+      "kycStatus": "approved",
+      "kycData": null,
+      "token": "token-kp0dy6me4-1751259057638",
+      "createdAt": "2025-06-30T04:50:57.639Z"
     }
   ],
-  "wallets": [],
+  "wallets": [
+    {
+      "id": "80a1",
+      "walletId": "a51f5572-4d1c-44c0-99a4-73211fd029fa",
+      "userId": "413aca13-018a-447a-b592-05bd516b38db",
+      "accountNumber": "735240ed-fca4-48c3-8423-43dbb667cfb5",
+      "balance": 0,
+      "createdAt": "2025-06-30T04:50:10.646Z"
+    },
+    {
+      "id": "256d",
+      "walletId": "8a0100af-de35-4182-b0e2-154156416663",
+      "userId": "5a319ed7-4562-450f-9f03-dc1b3716388f",
+      "accountNumber": "25a03d48-64d7-4cf3-b46e-acbeea928d52",
+      "balance": 0,
+      "createdAt": "2025-06-30T04:51:31.820Z"
+    }
+  ],
   "transactions": [],
   "kyc": [
     {
-      "id": "6c6f",
-      "userId": "f51d564e-4317-456c-a92b-6025e51ee548",
-      "fullName": "kirubel",
+      "id": "8d4c",
+      "userId": "413aca13-018a-447a-b592-05bd516b38db",
+      "fullName": "dfgd",
       "documentType": "driver_license",
-      "documentNumber": "d23232323",
+      "documentNumber": "sdfsf",
       "gender": "male",
-      "dob": "2025-06-12",
-      "address": "sfsf",
-      "country": "KE",
-      "photoUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSJkFw2i2ARjy8nqWrR3zKYSXyMummCYKwkAw&s"
+      "dob": "1996-11-13",
+      "address": "sdfss",
+      "country": "IN",
+      "photoUrl": "https://media.licdn.com/dms/image/v2/D4E03AQEVMMTJnnAxqw/profile-displayphoto-shrink_100_100/profile-displayphoto-shrink_100_100/0/1731992711112?e=1756944000&v=beta&t=fI3Zku468Mhy_RAqhpBF87WZ3EkGopkftMRBApMtjY8"
     },
     {
-      "id": "8b09",
-      "userId": "fe525446-8df4-40da-905d-ac8897f816fa",
-      "fullName": "kira",
+      "id": "adaa",
+      "userId": "5a319ed7-4562-450f-9f03-dc1b3716388f",
+      "fullName": "sfssdfsf",
       "documentType": "passport",
       "documentNumber": "sdfs",
       "gender": "male",
-      "dob": "2025-06-16",
-      "address": "sdfs",
-      "country": "KE",
+      "dob": "1991-05-30",
+      "address": "sefsdfs",
+      "country": "AU",
       "photoUrl": "https://media.licdn.com/dms/image/v2/D4E03AQEVMMTJnnAxqw/profile-displayphoto-shrink_100_100/profile-displayphoto-shrink_100_100/0/1731992711112?e=1756944000&v=beta&t=fI3Zku468Mhy_RAqhpBF87WZ3EkGopkftMRBApMtjY8"
     }
   ]

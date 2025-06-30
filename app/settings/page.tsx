@@ -7,7 +7,7 @@ import Layout from "@/components/LayoutNavs";
 import { Button } from "@/components/ui/button";
 import Toast from "@/components/Toast";
 import { User, Shield, Mail } from "lucide-react";
-import { useProfileUpdate } from "@/hooks/UseProfileHook";
+import { useProfileUpdate } from "@/hooks/UseProfileupdateHook";
 import { useAutoLogin } from "@/hooks/UseAuthHook";
 
 // I have defined the User interface to match the JSON server and AuthStore, including kycStatus and profileImage, removing minBalance.

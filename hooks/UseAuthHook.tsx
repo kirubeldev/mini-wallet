@@ -48,6 +48,8 @@ const fetcherByToken = async (url: string, { arg }: { arg: string }) => {
   }
 };
 
+
+
 // I have created a simple function to generate a fake token for the user during registration.
 const generateFakeToken = () => {
   return `token-${Math.random().toString(36).substr(2, 9)}-${Date.now()}`;
@@ -200,7 +202,6 @@ export const useLogin = () => {
 };
 
 // I have updated the useRegister hook to generate a UUID for user.id and include kycStatus.
-
 export const useRegister = () => {
   const { setUser } = useAuthStore();
 

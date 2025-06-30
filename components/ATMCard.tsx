@@ -23,7 +23,7 @@ export default function ATMCard({
 }: ATMCardProps) {
   return (
     <div
-      className={`relative bg-gradient-to-br from-blue-600 to-blue-800 rounded-xl p-6 text-white shadow-lg transform transition-all duration-200 hover:scale-105 ${
+      className={`relative cursor-pointer bg-gradient-to-br from-blue-600 to-blue-800 rounded-xl p-6 text-white shadow-lg transform transition-all min-w-[350px] duration-200 hover:scale-105 ${
         isLowBalance ? "ring-2 ring-red-400" : ""
       }`}
     >

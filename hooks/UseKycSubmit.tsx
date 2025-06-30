@@ -3,6 +3,7 @@ import useSWRMutation from "swr/mutation";
 import useSWR from "swr";
 import axiosInstance from "@/lib/axios-Instance";
 import { useAuthStore } from "@/store/AuthStore";
+import { v4 as uuidv4 } from "uuid";
 
 interface KycData {
   userId: string;
@@ -14,6 +15,14 @@ interface KycData {
   address: string;
   country: string;
   photoUrl: string;
+}
+
+interface Wallet {
+  walletId: string;
+  userId: string;
+  accountNumber: string;
+  balance: number;
+  createdAt: string;
 }
 
 const kycSubmitFetcher = async (url: string, { arg }: { arg: { userId: string; kycData: KycData } }) => {
@@ -39,6 +48,16 @@ const kycFetchFetcher = async (url: string) => {
   } catch (error) {
     throw new Error("Failed to fetch KYC data");
   }
+};
+
+const walletFetcher = async (url: string) => {
+  const response = await axiosInstance.get(url);
+  return response.data as Wallet[];
+};
+
+const addWalletFetcher = async (url: string, { arg }: { arg: Wallet }) => {
+  const response = await axiosInstance.post(url, arg);
+  return response.data;
 };
 
 export const useKycSubmit = () => {
@@ -67,6 +86,12 @@ export const useKycSubmit = () => {
     }
   );
 
+  const { data: walletData } = useSWR(
+    user?.id ? `/wallets?userId=${user.id}` : null,
+    walletFetcher,
+    { revalidateOnFocus: false }
+  );
+
   const submitKyc = useCallback(
     async (userId: string, kycData: KycData) => {
       try {
@@ -87,12 +112,37 @@ export const useKycSubmit = () => {
         
         setUser(userData);
         await mutateKyc([fetchedKyc]);
+
+        // Check if user has any wallets
+        const hasWallets = walletData && walletData.length > 0;
+        if (!hasWallets) {
+          // Create a new wallet for first-time KYC submission
+          const walletId = uuidv4();
+          const accountNumber = uuidv4();
+          
+          // Check if accountNumber is unique
+          const checkAccountResponse = await axiosInstance.get(`/wallets?accountNumber=${accountNumber}`);
+          if (checkAccountResponse.data.length > 0) {
+            throw new Error("Account number already exists. Please try again.");
+          }
+
+          const walletResponse = await axiosInstance.post("/wallets", {
+            walletId,
+            userId: user.id,
+            accountNumber,
+            balance: 0,
+            createdAt: new Date().toISOString(),
+          });
+
+          console.log("submitKyc: Wallet created for first-time KYC:", walletResponse.data);
+        }
+
         return userData;
       } catch (err: any) {
-        throw new Error(err.message || "KYC submission failed. Please try again.");
+        throw new Error(err.message || "KYC submission or wallet creation failed. Please try again.");
       }
     },
-    [submitTrigger, setUser, mutateKyc]
+    [submitTrigger, setUser, mutateKyc, user, walletData]
   );
 
   // Get the first item if array exists, or null

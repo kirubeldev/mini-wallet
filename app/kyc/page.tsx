@@ -1,6 +1,7 @@
 "use client";
+
 import type React from "react";
-import { useState, useMemo, useCallback, lazy, Suspense, useEffect } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/AuthStore";
 import { useTheme } from "@/hooks/UseTheamHook";
@@ -11,12 +12,26 @@ import Skeleton from "react-loading-skeleton";
 import { CheckCircleIcon, ExclamationTriangleIcon } from "@heroicons/react/24/outline";
 import { useKycSubmit } from "@/hooks/UseKycSubmit";
 import { useAutoLogin } from "@/hooks/UseAuthHook";
+import { Suspense, lazy } from "react";
 
 const KYCSuccessDialog = lazy(() => import("../../components/kycSuccesDialog"));
 
+interface User {
+  id: string;
+  firstname: string;
+  lastname: string;
+  email: string;
+  password?: string;
+  currency: string;
+  theme: "light" | "dark";
+  profileImage?: string;
+  kycStatus: "not-started" | "approved";
+  token?: string;
+}
+
 export default function KYC() {
   const router = useRouter();
-  const { user } = useAuthStore();
+  const { user, setUser } = useAuthStore();
   const { submitKyc, isSubmitting, submitError, kycData, fetchError, isFetching } = useKycSubmit();
   const { isLoading: isAutoLoginLoading, error: autoLoginError } = useAutoLogin();
   const { theme } = useTheme();
@@ -37,7 +52,6 @@ export default function KYC() {
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [ageError, setAgeError] = useState(false);
 
-  // Initialize form data when kycData or user changes
   useEffect(() => {
     if (kycData && user?.id && kycData.userId === user.id) {
       setFormData({
@@ -54,7 +68,6 @@ export default function KYC() {
     }
   }, [kycData, user?.id]);
 
- 
   const documentTypes = useMemo(
     () => [
       { value: "national_id", label: "National ID" },
@@ -92,12 +105,25 @@ export default function KYC() {
     if (!formData.documentNumber.trim()) newErrors.documentNumber = "Document number is required";
     if (!formData.gender) newErrors.gender = "Gender is required";
     if (!formData.dob) newErrors.dob = "Date of birth is required";
+    else {
+      const dob = new Date(formData.dob);
+      const today = new Date();
+      let age = today.getFullYear() - dob.getFullYear();
+      const monthDiff = today.getMonth() - dob.getMonth();
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+        age--;
+      }
+      if (age < 18) {
+        newErrors.dob = "You must be at least 18 years old";
+        setAgeError(true);
+      } else {
+        setAgeError(false);
+      }
+    }
     if (!formData.address.trim()) newErrors.address = "Address is required";
     if (!formData.country) newErrors.country = "Country is required";
     if (!formData.photoUrl.trim()) newErrors.photoUrl = "Photo URL is required";
     setErrors(newErrors);
-
-    // Return true if no errors, false otherwise
     return Object.keys(newErrors).length === 0;
   };
 
@@ -124,7 +150,7 @@ export default function KYC() {
     if (!validateForm()) {
       if (ageError) {
         setToast({ message: "You must be at least 18 years old to submit KYC.", type: "error" });
-      } else if (!toast || toast.message !== "You must be at least 18 years old to submit KYC data.") {
+      } else if (!toast || toast.message !== "You must be at least 18 years old to submit KYC.") {
         setToast({ message: "Please fill all required fields correctly.", type: "error" });
       }
       return;
@@ -143,7 +169,8 @@ export default function KYC() {
         photoUrl: formData.photoUrl,
       };
       await submitKyc(user.id, kycData);
-      setToast({ message: "KYC information submitted successfully!", type: "success" });
+
+      setToast({ message: "KYC submitted and wallet created successfully!", type: "success" });
       setShowProcessingDialog(true);
       document.body.style.cursor = "wait";
 
@@ -153,13 +180,14 @@ export default function KYC() {
         document.body.style.cursor = "default";
       }, 3000);
     } catch (err: any) {
-      setToast({ message: err.message || "KYC submission failed. Please try again.", type: "error" });
+      console.log(`Kyc: Error - ${err.message}`);
+      setToast({ message: err.message || "KYC submission or wallet creation failed. Please try again.", type: "error" });
     }
   };
 
   const handleSuccessDialogClose = () => {
     setShowSuccessDialog(false);
-    router.push("/dashboard");
+    router.push("/wallet");
   };
 
   const getStatusIcon = () => {
@@ -242,13 +270,11 @@ export default function KYC() {
   return (
     <Layout>
       <div className="space-y-6">
-        {/* Header */}
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">KYC Verification</h1>
           <p className="text-gray-600 dark:text-gray-400">Complete your identity verification to access all features</p>
         </div>
 
-        {/* Status Card */}
         {user?.kycStatus && (
           <div className={`border rounded-lg p-6 ${getStatusColor()}`}>
             <div className="flex items-center">
@@ -263,7 +289,6 @@ export default function KYC() {
           </div>
         )}
 
-        {/* KYC Form */}
         <div className="bg-white dark:bg-gray-800 shadow rounded-lg">
           <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
             <h3 className="text-lg font-medium text-gray-900 dark:text-white">
@@ -273,7 +298,6 @@ export default function KYC() {
 
           <form onSubmit={handleSubmit} className="p-6 space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Full Name */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Full Name</label>
                 {showReadOnlyFields ? (
@@ -294,7 +318,6 @@ export default function KYC() {
                 )}
               </div>
 
-              {/* Document Type */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Document Type</label>
                 {showReadOnlyFields ? (
@@ -322,7 +345,6 @@ export default function KYC() {
                 )}
               </div>
 
-              {/* Document Number */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                   {getDocumentNumberLabel()}
@@ -345,7 +367,6 @@ export default function KYC() {
                 )}
               </div>
 
-              {/* Gender */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Gender</label>
                 {showReadOnlyFields ? (
@@ -369,7 +390,6 @@ export default function KYC() {
                 )}
               </div>
 
-              {/* Date of Birth */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Date of Birth</label>
                 {showReadOnlyFields ? (
@@ -392,7 +412,6 @@ export default function KYC() {
                 )}
               </div>
 
-              {/* Country */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Country</label>
                 {showReadOnlyFields ? (
@@ -422,7 +441,6 @@ export default function KYC() {
               </div>
             </div>
 
-            {/* Address */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Address</label>
               {showReadOnlyFields ? (
@@ -443,7 +461,6 @@ export default function KYC() {
               )}
             </div>
 
-            {/* Photo URL */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Selfie Photo URL</label>
               {showReadOnlyFields ? (
@@ -481,7 +498,6 @@ export default function KYC() {
               )}
             </div>
 
-            {/* Submit Button */}
             {!isApproved && (
               <div className="flex justify-start">
                 <Button
@@ -496,7 +512,6 @@ export default function KYC() {
           </form>
         </div>
 
-        {/* Requirements */}
         <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-6">
           <h3 className="text-lg font-medium text-blue-900 dark:text-blue-200 mb-4">📋 KYC Requirements</h3>
           <ul className="space-y-2 text-sm text-blue-800 dark:text-blue-300">
@@ -508,7 +523,6 @@ export default function KYC() {
         </div>
       </div>
 
-      {/* Processing Dialog */}
       {showProcessingDialog && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
           <div className="flex min-h-screen items-center justify-center p-4">
@@ -526,12 +540,11 @@ export default function KYC() {
         </div>
       )}
 
-      {/* Success Dialog with Suspense */}
       <Suspense fallback={<div>Loading dialog...</div>}>
         <KYCSuccessDialog
           isOpen={showSuccessDialog}
-          onClose={() => setShowSuccessDialog(false)}
-          onRedirect={() => router.push("/dashboard")}
+          onClose={handleSuccessDialogClose}
+          onRedirect={handleSuccessDialogClose}
         />
       </Suspense>
 

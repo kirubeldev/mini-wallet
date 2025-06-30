@@ -23,7 +23,7 @@ interface User {
   token?: string;
 }
 
-// I have updated Register.tsx to remove profileImage field, pass empty string for profileImage in register, and remove minBalance.
+// I have updated Register.tsx to remove profileImage field, remove wallet creation, and redirect to /kyc.
 export default function Register() {
   const { register } = useRegister();
   const { setUser } = useAuthStore();
@@ -52,7 +52,7 @@ export default function Register() {
     return Object.keys(newErrors).length === 0;
   };
 
-  // I have updated handleSubmit to remove profileImage and ensure token is handled correctly.
+  // I have updated handleSubmit to remove wallet creation and redirect to /kyc.
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
@@ -78,9 +78,10 @@ export default function Register() {
       // I have set the token in a cookie for middleware authentication and auto-login.
       document.cookie = `token=${userData.token}; path=/; max-age=${60 * 60 * 24 * 7}`;
       console.log(`Register: User registered - User: ${JSON.stringify(userData)}, Token: ${userData.token}`);
-      setToast({ message: "Registration successful!", type: "success" });
+
+      setToast({ message: "Registration successful! Please complete KYC.", type: "success" });
       setTimeout(() => {
-        router.push(userData.kycStatus === "approved" ? "/dashboard" : "/kyc");
+        router.push("/kyc");
       }, 1000);
     } catch (error: any) {
       console.log(`Register: Error - ${error.message}`);

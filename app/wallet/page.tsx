@@ -11,51 +11,89 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { PlusIcon, EyeIcon, EyeSlashIcon, WalletIcon } from "@heroicons/react/24/outline";
 import { useWalletStore } from "@/store/wallet-store";
-import { useWalletStore } from "@/store/wallet-store";
+import { useWallets } from "@/hooks/UseWalletHook";
+
+interface User {
+  id: string;
+  firstname: string;
+  lastname: string;
+  email: string;
+  password?: string;
+  currency: string;
+  theme: "light" | "dark";
+  profileImage?: string;
+  kycStatus: "not-started" | "approved";
+  token?: string;
+}
+
+interface Wallet {
+  walletId: string;
+  userId: string;
+  accountNumber: string;
+  balance: number;
+  createdAt: string;
+}
 
 export default function Wallets() {
   const { user, balanceVisible, toggleBalanceVisibility } = useWalletStore();
-  const { addWallet, walletData, walletError, isLoading, toast, setToast } = useWallets();
+  const { addWallet, depositToWallet, walletData, walletError, isLoading, isDepositing, toast, setToast } = useWallets();
   const [showAddForm, setShowAddForm] = useState(false);
   const [lowBalanceDialog, setLowBalanceDialog] = useState<{
     isOpen: boolean;
-    wallet?: any;
+    wallet?: Wallet;
   }>({ isOpen: false });
-  const [formData, setFormData] = useState({
-    walletBalance: "",
-    walletThreshold: "100",
-  });
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [depositDialog, setDepositDialog] = useState<{
+    isOpen: boolean;
+    walletId?: string;
+  }>({ isOpen: false });
+  const [depositAmount, setDepositAmount] = useState("");
+  const [depositError, setDepositError] = useState("");
 
-  // I have validated form data before submission.
-  const validateForm = () => {
-    const newErrors: Record<string, string> = {};
-    if (!formData.walletBalance || Number.parseFloat(formData.walletBalance) < 0) {
-      newErrors.walletBalance = "Initial balance must be non-negative";
-    }
-    if (!formData.walletThreshold || Number.parseFloat(formData.walletThreshold) < 100) {
-      newErrors.walletThreshold = "Threshold must be at least 100";
-    }
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+  console.log("Wallets: user.kycStatus =", user?.kycStatus); // Debug KYC status
+  console.log("Wallets: walletData =", walletData); // Debug wallet data
 
-  // I have handled wallet addition with validation.
   const handleAddWallet = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validateForm()) {
-      setToast({ message: "Please fill all fields correctly.", type: "error" });
+    if (user?.kycStatus !== "approved") {
+      setToast({ message: "KYC approval required to create a wallet.", type: "error" });
+      setShowAddForm(false);
       return;
     }
-    await addWallet({
-      walletBalance: Number.parseFloat(formData.walletBalance),
-      walletThreshold: Number.parseFloat(formData.walletThreshold),
-    });
-    setShowAddForm(false);
-    setFormData({ walletBalance: "", walletThreshold: "100" });
+    try {
+      await addWallet();
+      setShowAddForm(false);
+    } catch (error: any) {
+      // Toast is set in useWallets hook
+    }
   };
 
-  // I have shown skeleton loader during fetch.
+  const handleDeposit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!depositDialog.walletId) {
+      setDepositError("No wallet selected.");
+      return;
+    }
+    const amount = parseFloat(depositAmount);
+    if (isNaN(amount) || amount <= 0) {
+      setDepositError("Please enter a valid deposit amount greater than 0.");
+      return;
+    }
+    try {
+      await depositToWallet(depositDialog.walletId, amount);
+      setDepositDialog({ isOpen: false });
+      setDepositAmount("");
+      setDepositError("");
+    } catch (error: any) {
+      setDepositError(error.message || "Deposit failed. Please try again.");
+    }
+  };
+
+  const openDepositDialog = (walletId: string) => {
+    setDepositDialog({ isOpen: true, walletId });
+    setDepositAmount("");
+    setDepositError("");
+  };
+
   if (isLoading) {
     return (
       <Layout>
@@ -87,7 +125,6 @@ export default function Wallets() {
   return (
     <Layout>
       <div className="space-y-6 p-6 max-w-4xl mx-auto">
-        {/* Header */}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Wallets</h1>
@@ -105,6 +142,7 @@ export default function Wallets() {
             <Button
               className="bg-blue-600 hover:bg-blue-700 text-white"
               onClick={() => setShowAddForm(true)}
+              disabled={user?.kycStatus !== "approved"}
             >
               <PlusIcon className="h-4 w-4 mr-2" />
               Add Wallet
@@ -112,88 +150,59 @@ export default function Wallets() {
           </div>
         </div>
 
-        {/* Wallet Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {walletData && walletData.length > 0 && walletData[0].userId === user?.id ? (
-            <ATMCard
-              key={walletData[0].walletId}
-              account={{
-                id: walletData[0].walletId,
-                name: user ? `${user.firstname} ${user.lastname}` : "Wallet",
-                balance: walletData[0].walletBalance,
-                currency: user?.currency || "ETB",
-              }}
-              isLowBalance={walletData[0].walletBalance < walletData[0].walletThreshold}
-              balanceVisible={balanceVisible}
-              onToggleBalance={toggleBalanceVisibility}
-              onLowBalanceAlert={() => setLowBalanceDialog({ isOpen: true, wallet: walletData[0] })}
-            />
-          ) : null}
+          {Array.isArray(walletData) && walletData.length > 0 ? (
+            walletData.map((wallet: Wallet) => (
+              <ATMCard
+                key={wallet.walletId}
+                account={{
+                  id: wallet.walletId,
+                  name: user ? `${user.firstname} ${user.lastname}` : "Wallet",
+                  balance: wallet.balance,
+                  currency: user?.currency || "USD",
+                }}
+                isLowBalance={false}  
+                balanceVisible={balanceVisible}
+                onToggleBalance={toggleBalanceVisibility}
+                onLowBalanceAlert={() => setLowBalanceDialog({ isOpen: true, wallet })}
+                onCardClick={() => openDepositDialog(wallet.walletId)}
+              />
+            ))
+          ) : (
+            <div className="col-span-full text-center py-12">
+              <div className="mx-auto h-12 w-12 text-gray-400">
+                <WalletIcon className="h-12 w-12" />
+              </div>
+              <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">No wallets</h3>
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                {user?.kycStatus === "approved"
+                  ? "Get started by adding your first wallet."
+                  : "Complete KYC approval to create a wallet."}
+              </p>
+              <div className="mt-6">
+                <Button
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                  onClick={() => setShowAddForm(true)}
+                  disabled={user?.kycStatus !== "approved"}
+                >
+                  <PlusIcon className="h-4 w-4 mr-2" />
+                  Add Wallet
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
-
-        {(!walletData || walletData.length === 0) && (
-          <div className="text-center py-12">
-            <div className="mx-auto h-12 w-12 text-gray-400">
-              <WalletIcon className="h-12 w-12" />
-            </div>
-            <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">No wallets</h3>
-            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Get started by adding your first wallet.</p>
-            <div className="mt-6">
-              <Button
-                className="bg-blue-600 hover:bg-blue-700 text-white"
-                onClick={() => setShowAddForm(true)}
-              >
-                <PlusIcon className="h-4 w-4 mr-2" />
-                Add Wallet
-              </Button>
-            </div>
-          </div>
-        )}
       </div>
 
-      {/* Add Wallet Dialog */}
       <Dialog open={showAddForm} onOpenChange={setShowAddForm}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Add New Wallet</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleAddWallet} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Initial Balance</label>
-              <div className="relative">
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={formData.walletBalance}
-                  onChange={(e) => setFormData({ ...formData, walletBalance: e.target.value })}
-                  className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 pr-16"
-                  placeholder="0.00"
-                />
-                <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                  <span className="text-gray-500 dark:text-gray-400 sm:text-sm">{user?.currency || "ETB"}</span>
-                </div>
-              </div>
-              {errors.walletBalance && <p className="mt-1 text-sm text-red-600">{errors.walletBalance}</p>}
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Threshold</label>
-              <div className="relative">
-                <input
-                  type="number"
-                  step="0.01"
-                  min="100"
-                  value={formData.walletThreshold}
-                  onChange={(e) => setFormData({ ...formData, walletThreshold: e.target.value })}
-                  className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 pr-16"
-                  placeholder="100.00"
-                />
-                <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                  <span className="text-gray-500 dark:text-gray-400 sm:text-sm">{user?.currency || "ETB"}</span>
-                </div>
-              </div>
-              {errors.walletThreshold && <p className="mt-1 text-sm text-red-600">{errors.walletThreshold}</p>}
-            </div>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              A new wallet will be created with a balance of 0 {user?.currency || "USD"}.
+            </p>
             <div className="flex justify-end space-x-3">
               <Button
                 type="button"
@@ -203,8 +212,54 @@ export default function Wallets() {
               >
                 Cancel
               </Button>
-              <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white">
+              <Button
+                type="submit"
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+                disabled={user?.kycStatus !== "approved"}
+              >
                 Add Wallet
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={depositDialog.isOpen} onOpenChange={() => setDepositDialog({ isOpen: false })}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Deposit to Wallet</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleDeposit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Deposit Amount ({user?.currency || "USD"})</label>
+              <input
+                type="number"
+                value={depositAmount}
+                onChange={(e) => setDepositAmount(e.target.value)}
+                className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                placeholder="Enter amount"
+                min="0.01"
+                step="0.01"
+                disabled={isDepositing}
+              />
+              {depositError && <p className="mt-1 text-sm text-red-600">{depositError}</p>}
+            </div>
+            <div className="flex justify-end space-x-3">
+              <Button
+                type="button"
+                variant="outline"
+                className="text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
+                onClick={() => setDepositDialog({ isOpen: false })}
+                disabled={isDepositing}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+                disabled={isDepositing}
+              >
+                {isDepositing ? "Depositing..." : "Deposit"}
               </Button>
             </div>
           </form>
@@ -215,9 +270,9 @@ export default function Wallets() {
         isOpen={lowBalanceDialog.isOpen}
         onClose={() => setLowBalanceDialog({ isOpen: false })}
         accountName={lowBalanceDialog.wallet?.walletId || "Wallet"}
-        currentBalance={lowBalanceDialog.wallet?.walletBalance || 0}
-        minBalance={lowBalanceDialog.wallet?.walletThreshold || 100}
-        currency={user?.currency || "ETB"}
+        currentBalance={lowBalanceDialog.wallet?.balance || 0}
+        minBalance={0}
+        currency={user?.currency || "USD"}
       />
 
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
