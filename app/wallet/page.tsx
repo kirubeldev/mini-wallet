@@ -280,14 +280,14 @@ export default function Wallets() {
               <ArrowsRightLeftIcon className="h-4 w-4 mr-2" />
               Transfer (My Wallets)
             </Button>
-            <Button
+            {/* <Button
               className="bg-blue-600 hover:bg-blue-700 text-white"
               onClick={() => setUserTransferDialog(true)}
               disabled={!Array.isArray(walletData) || walletData.length === 0}
             >
               <UserIcon className="h-4 w-4 mr-2" />
               Transfer to User
-            </Button>
+            </Button> */}
             <Button
               className="bg-blue-600 hover:bg-blue-700 text-white"
               onClick={() => setShowAddForm(true)}
@@ -529,14 +529,14 @@ export default function Wallets() {
                     .map((wallet: Wallet) => (
                       <option key={wallet.walletId} value={wallet.walletId}>
                         {user ? `${user.firstname} ${user.lastname}` : "Wallet"} - {wallet.accountNumber.slice(0, 8)}...
-                        (Balance: {wallet.balance} {user?.currency || "ETB"})
+                        (Balance: {wallet.balance}  + "USD"))
                       </option>
                     ))}
               </select>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Transfer Amount ({user?.currency || "ETB"})
+                Transfer Amount 
               </label>
               <input
                 type="number"
@@ -575,112 +575,14 @@ export default function Wallets() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={userTransferDialog} onOpenChange={setUserTransferDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Transfer to Another User</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleUserTransfer} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">From Wallet</label>
-              <select
-                value={transferFromWalletId}
-                onChange={(e) => setTransferFromWalletId(e.target.value)}
-                className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                disabled={isPatching}
-              >
-                <option value="">Select source wallet</option>
-                {Array.isArray(walletData) &&
-                  walletData.map((wallet: Wallet) => (
-                    <option key={wallet.walletId} value={wallet.walletId}>
-                      {user ? `${user.firstname} ${user.lastname}` : "Wallet"} - {wallet.accountNumber.slice(0, 8)}...
-                      (Balance: {wallet.balance} {user?.currency || "ETB"})
-                    </option>
-                  ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">To User</label>
-              <select
-                value={transferToUserId}
-                onChange={(e) => setTransferToUserId(e.target.value)}
-                className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                disabled={isPatching}
-              >
-                <option value="">Select destination user</option>
-                {Array.isArray(usersData) &&
-                  usersData
-                    .filter((u: User) => u.id !== user?.id)
-                    .map((u: User) => (
-                      <option key={u.id} value={u.id}>
-                        {u.firstname} {u.lastname} ({u.email})
-                      </option>
-                    ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">To Wallet</label>
-              <select
-                value={transferToUserWalletId}
-                onChange={(e) => setTransferToUserWalletId(e.target.value)}
-                className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                disabled={isPatching || !transferToUserId}
-              >
-                <option value="">Select destination wallet</option>
-                {Array.isArray(selectedUserWallets?.[transferToUserId]) &&
-                  selectedUserWallets[transferToUserId].map((wallet: Wallet) => (
-                    <option key={wallet.walletId} value={wallet.walletId}>
-                      {wallet.accountNumber.slice(0, 8)}... (Balance: {wallet.balance} {user?.currency || "ETB"})
-                    </option>
-                  ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Transfer Amount ({user?.currency || "ETB"})
-              </label>
-              <input
-                type="number"
-                value={transferAmount}
-                onChange={(e) => setTransferAmount(e.target.value)}
-                className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                placeholder="Enter amount"
-                min="0.01"
-                step="0.01"
-                disabled={isPatching}
-              />
-              {transferError && <p className="mt-1 text-sm text-red-600">{transferError}</p>}
-            </div>
-            <div className="flex justify-end space-x-3">
-              <Button
-                type="button"
-                variant="outline"
-                className="text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
-                onClick={() => setUserTransferDialog(false)}
-                disabled={isPatching}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                className="bg-blue-600 hover:bg-blue-700 text-white"
-                disabled={isPatching}
-              >
-                {isPatching ? "Transferring..." : "Transfer"}
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
+      
 
       <LowBalanceDialog
         isOpen={lowBalanceDialog.isOpen}
         onClose={() => setLowBalanceDialog({ isOpen: false })}
         accountName={lowBalanceDialog.wallet?.walletId || "Wallet"}
         currentBalance={lowBalanceDialog.wallet?.balance || 0}
-        minBalance={0}
-        currency={user?.currency || "ETB"}
-      />
+        minBalance={0} currency={""}      />
 
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </Layout>
