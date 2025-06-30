@@ -17,27 +17,54 @@ import {
   UserIcon,
   ArrowRightOnRectangleIcon,
 } from "@heroicons/react/24/outline";
-import { useAuthStore } from "@/store/AuthStore"; 
-import { useTheme } from "@/hooks/UseTheamHook"; 
+import { useAuthStore } from "@/store/AuthStore";
+import { useTheme } from "@/hooks/UseTheamHook";
 import { useAutoLogin } from "@/hooks/UseAuthHook";
-import { create } from "zustand";
+import axiosInstance from "@/lib/axios-Instance";
 
-// I have created a layout component here that provides a side nav and header for all pages, using user data from Zustand and theme from useTheme hook.
 interface LayoutProps {
   children: React.ReactNode;
 }
 
-export default function Layout({ children }: LayoutProps) {
-    const { isLoading: isAutoLoginLoading, error: autoLoginError } = useAutoLogin();
+export interface User {
+  id: string;
+  firstname: string;
+  lastname: string;
+  email: string;
+  password?: string;
+  currency: string;
+  theme: "light" | "dark";
+  profileImage: string;
+  kycStatus: "not-started" | "approved";
+  token?: string;
+}
+
+const validateUser = (data: any): User | null => {
+  if (!data?.id || !data?.email) return null;
   
+  return {
+    id: data.id,
+    firstname: data.firstname || "Guest",
+    lastname: data.lastname || "",
+    email: data.email,
+    password: data.password,
+    currency: data.currency || "USD",
+    theme: data.theme === "dark" ? "dark" : "light",
+    profileImage: data.profileImage || "",
+    kycStatus: data.kycStatus === "approved" ? "approved" : "not-started",
+    token: data.token || ""
+  };
+};
+
+export default function Layout({ children }: LayoutProps) {
+  const { isLoading: isAutoLoginLoading, error: autoLoginError } = useAutoLogin();
   const router = useRouter();
   const pathname = usePathname();
   const { user, setUser } = useAuthStore();
-  const { theme, setTheme } = useTheme(); // I have added the useTheme hook to manage theme state.
+  const { theme, setTheme } = useTheme();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
-  // I have defined the navigation items here for the side nav, consistent across all pages.
   const navigation = [
     { name: "Dashboard", href: "/dashboard", icon: HomeIcon },
     { name: "Wallets", href: "/wallet", icon: WalletIcon },
@@ -46,33 +73,45 @@ export default function Layout({ children }: LayoutProps) {
     { name: "Settings", href: "/settings", icon: Cog6ToothIcon },
   ];
 
-  // I have updated the logout handler to clear the token cookie and Zustand store, then redirect to /auth/login.
-  const handleLogout = () => {
-    console.log(`Logout: Clearing user - User: ${JSON.stringify(user)}, Token: ${user?.token || 'none'}`);
-    setUser(null); // I have cleared the user from the Zustand store.
-    document.cookie = 'token=; path=/; max-age=0'; // I have cleared the token cookie.
-    setUserMenuOpen(false);
-    router.push("/auth/login");
+  const handleLogout = async () => {
+    try {
+      console.log(`Logout: Clearing user - User: ${JSON.stringify(user)}, Token: ${user?.token || 'none'}`);
+      
+      if (user?.token) {
+        // Optional: Add API call to invalidate token on server if needed
+        await axiosInstance.post("/auth/logout", { token: user.token });
+      }
+      
+      setUser(null);
+      document.cookie = 'token=; path=/; max-age=0';
+      setUserMenuOpen(false);
+      router.push("/auth/login");
+    } catch (error) {
+      console.error("Logout error:", error);
+      // Even if logout fails, clear local state
+      setUser(null);
+      document.cookie = 'token=; path=/; max-age=0';
+      router.push("/auth/login");
+    }
   };
- if (isAutoLoginLoading) {
+
+  if (isAutoLoginLoading) {
     return (
-      <Layout>
-        <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-          Loading...
-        </div>
-      </Layout>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+        Loading...
+      </div>
     );
   }
+
   if (autoLoginError) {
     console.log(`AutoLogin Error: ${autoLoginError.message}`);
   }
-  // I have logged the user data here to debug the display issue in the user menu.
+
   console.log(`Layout: User data - ${JSON.stringify(user)}`);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-
-    
+      {/* Mobile sidebar */}
       <div className={`fixed inset-0 z-50 lg:hidden ${sidebarOpen ? "block" : "hidden"}`}>
         <div className="fixed inset-0 bg-gray-600 bg-opacity-75" onClick={() => setSidebarOpen(false)} />
         <div className="fixed inset-y-0 left-0 flex w-64 flex-col bg-white dark:bg-gray-800">
@@ -153,6 +192,11 @@ export default function Layout({ children }: LayoutProps) {
                 className="p-2 rounded-md text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors"
                 title={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
               >
+                {theme === "light" ? (
+                  <MoonIcon className="h-5 w-5" />
+                ) : (
+                  <SunIcon className="h-5 w-5" />
+                )}
               </button>
 
               {/* User Menu */}
@@ -161,9 +205,9 @@ export default function Layout({ children }: LayoutProps) {
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
                   className="flex items-center space-x-3 p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                 >
-                  <div className="h-8 w-8 rounded-full  bg-blue-600 flex items-center justify-center text-white text-sm font-medium">
-  {(user?.firstname?.[0] || "G") + (user?.lastname?.[0] || "U")}
-</div>
+                  <div className="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-medium">
+                    {(user?.firstname?.[0] || "G") + (user?.lastname?.[0] || "U")}
+                  </div>
 
                   <div className="hidden sm:block text-left">
                     <p className="text-sm font-medium text-gray-900 dark:text-white">
@@ -213,16 +257,3 @@ export default function Layout({ children }: LayoutProps) {
     </div>
   );
 }
-export interface User {
-  // ... your user fields
-}
-
-type AuthStore = {
-  user: User | null;
-  setUser: (user: User | null) => void;
-};
-
-export const useAuthStores = create<AuthStore>((set) => ({
-  user: null,
-  setUser: (user: User | null) => set({ user }),
-}));

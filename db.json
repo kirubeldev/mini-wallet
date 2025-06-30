@@ -43,7 +43,7 @@
       "walletId": "41094d9b-eb41-46b4-992e-4c6da692c7ef",
       "userId": "42a741fa-0d7b-4cc2-bc2e-f1be9fc399e9",
       "accountNumber": "68e961fc-dbb8-4a37-b4c9-9b9f5b89c782",
-      "balance": 520,
+      "balance": 522,
       "createdAt": "2025-06-30T20:16:46.109Z"
     },
     {
@@ -51,7 +51,7 @@
       "walletId": "a9ef574f-ba8b-4b11-a21c-899a2fe2cf1c",
       "userId": "e1920cca-d99f-4e6b-894d-1905a622d8a6",
       "accountNumber": "9a2f9ce1-2687-498a-9673-90bf2aa90f02",
-      "balance": 600,
+      "balance": 597.996,
       "createdAt": "2025-06-30T20:20:43.592Z"
     }
   ],
@@ -68,6 +68,32 @@
       "status": "success",
       "reason": "try",
       "timestamp": "2025-06-30T20:19:03.925Z"
+    },
+    {
+      "id": "tx-eebffac8-fed4-47f5-b1dc-bba462f70f97",
+      "userId": "e1920cca-d99f-4e6b-894d-1905a622d8a6",
+      "fromWallet": "a9ef574f-ba8b-4b11-a21c-899a2fe2cf1c",
+      "toWallet": "41094d9b-eb41-46b4-992e-4c6da692c7ef",
+      "amount": 2,
+      "currency": "USD",
+      "serviceCharge": 0.004,
+      "type": "receive",
+      "status": "success",
+      "reason": "df",
+      "timestamp": "2025-06-30T20:58:21.161Z"
+    },
+    {
+      "id": "tx-f156c03a-dbb5-469d-991a-d17b0bccaf75",
+      "userId": "42a741fa-0d7b-4cc2-bc2e-f1be9fc399e9",
+      "fromWallet": "a9ef574f-ba8b-4b11-a21c-899a2fe2cf1c",
+      "toWallet": "41094d9b-eb41-46b4-992e-4c6da692c7ef",
+      "amount": 2,
+      "currency": "USD",
+      "serviceCharge": 0,
+      "type": "receive",
+      "status": "success",
+      "reason": "df",
+      "timestamp": "2025-06-30T20:58:21.189Z"
     }
   ],
   "kyc": [

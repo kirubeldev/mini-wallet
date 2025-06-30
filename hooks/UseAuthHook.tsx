@@ -13,7 +13,7 @@ interface User {
   password?: string;
   currency: string;
   theme: "light" | "dark";
-  profileImage: string;
+  profileImage?: string;
   kycStatus: "not-started" | "approved";
   token?: string;
 }
@@ -109,6 +109,8 @@ export const useAutoLogin = () => {
           email: fetchedUser.email,
           token: fetchedUser.token ?? "",
           kycStatus: fetchedUser.kycStatus || "not-started",
+          currency: fetchedUser.currency || "USD",
+          theme: fetchedUser.theme || "light",
           profileImage: fetchedUser.profileImage || "",
         };
         // I have stored the user in the Zustand store.
@@ -174,7 +176,7 @@ export const useLogin = () => {
           await axiosInstance.patch(`/users/${fullUserData.id}`, { id: userId });
         }
 
-        // I have mapped the fetched user to match the AuthStore's User interface, including kycStatus and profileImage.
+        // I have mapped the fetched user to match the AuthStore's User interface, including kycStatus.
         const userData = {
           id: userId,
           firstname: fullUserData.firstname || "Guest",
@@ -183,6 +185,8 @@ export const useLogin = () => {
           token: fullUserData.token ?? "",
           kycStatus: fullUserData.kycStatus || "not-started",
           profileImage: fullUserData.profileImage || "",
+          currency: fullUserData.currency || "USD",
+          theme: fullUserData.theme || "light",
         };
         // I have stored the user in the Zustand store to make user data and kycStatus visible.
         setUser(userData);
@@ -263,30 +267,22 @@ export const useRegister = () => {
         console.log("Register: POST response:", userResponse.data);
 
         // I have mapped the response to AuthStore's User interface, including kycStatus and profileImage.
-  const validateUser = (data: any): User | null => {
-  if (!data.id || !data.email) return null;
-  
-  return {
-    id: data.id,
-    firstname: data.firstname || "Guest",
-    lastname: data.lastname || "",
-    email: data.email,
-    password: data.password,
-    currency: data.currency || "USD",
-    theme: data.theme === "dark" ? "dark" : "light",
-    profileImage: data.profileImage || "",
-    kycStatus: data.kycStatus === "approved" ? "approved" : "not-started",
-    token: data.token || ""
-  };
-};
+        const userData: User = {
+          id: userResponse.data.id,
+          firstname: userResponse.data.firstname || "Guest",
+          lastname: userResponse.data.lastname || "",
+          email: userResponse.data.email,
+          profileImage: typeof userResponse.data.profileImage === "string" ? userResponse.data.profileImage : "",
+          token: userResponse.data.token,
+          kycStatus: userResponse.data.kycStatus || "not-started",
+          currency: userResponse.data.currency || "USD",
+          theme: userResponse.data.theme || "light",
+        };
 
-const userData = validateUser(userResponse.data);
-if (userData) {
-  // Ensure token is always a string
-  setUser({ ...userData, token: userData.token ?? "" });
-} else {
-  console.error("Invalid user data");
-}
+        // I have stored the user in AuthStore to make user data and kycStatus visible.
+        setUser(null);
+        console.log(`Register: User stored - User: ${JSON.stringify(userData)}`);
+
         return userResponse.data;
       } catch (error: any) {
         console.log("Register: Error during registration:", error.response?.data || error.message);

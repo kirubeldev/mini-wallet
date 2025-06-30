@@ -1,30 +1,26 @@
 import { create } from "zustand";
-
-// I have defined the User interface to match the JSON server user structure, including token and kycStatus.
+// In your AuthStore file (or at the top of this file)
 interface User {
-  profileImage: any;
   id: string;
   firstname: string;
   lastname: string;
   email: string;
-  token: string;
-  kycStatus:  "not-started" | "approved";
+  password?: string;
+  currency: string;
+  theme: "light" | "dark";
+  profileImage: string;
+  kycStatus: "not-started" | "approved";
+  token?: string;
 }
 
-// I have created an AuthState interface to manage the current user and token in the Zustand store.
-interface AuthState {
+interface AuthStore {
   user: User | null;
-  setUser: (user: User) => void;
+  setUser: (user: User | null) => void;
   clearUser: () => void;
-  setToken: (token: string) => void;
 }
 
-// I have set up the Zustand store to manage user data, token, and kycStatus in memory for the Mini Wallet System, without persisting to localStorage.
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthStore>((set) => ({
   user: null,
-setUser: (user: User | null) => set({ user }),
+  setUser: (user: User | null) => set({ user }),
   clearUser: () => set({ user: null }),
-  setToken: (token) => set((state) => ({
-    user: state.user ? { ...state.user, token } : null,
-  })),
 }));
