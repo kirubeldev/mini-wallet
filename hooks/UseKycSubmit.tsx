@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback } from "react";
 import useSWRMutation from "swr/mutation";
+import useSWR from "swr";
 import axiosInstance from "@/lib/axios-Instance";
 import { useAuthStore } from "@/store/AuthStore";
 
-// I have updated KycData to remove initialBalance and add userId.
 interface KycData {
   userId: string;
   fullName: string;
@@ -16,101 +16,94 @@ interface KycData {
   photoUrl: string;
 }
 
-// I have updated the fetcher to set kycStatus to "approved" and include userId.
 const kycSubmitFetcher = async (url: string, { arg }: { arg: { userId: string; kycData: KycData } }) => {
   try {
-    // I have posted KYC data to /kyc with userId.
-    const kycResponse = await axiosInstance.post("/kyc", {
-      ...arg.kycData,
-    });
-    // I have updated the user's kycStatus to "approved" without kycData.
+    const kycResponse = await axiosInstance.post(url, arg.kycData);
     const userResponse = await axiosInstance.patch(`/users/${arg.userId}`, {
       kycStatus: "approved",
     });
-    // I have fetched the KYC data post-submission.
-    const kycFetchResponse = await axiosInstance.get(`/kyc?userId=${arg.userId}`);
-    return { kyc: kycResponse.data, user: userResponse.data, fetchedKyc: kycFetchResponse.data[0] || null };
+    return { 
+      kyc: kycResponse.data, 
+      user: userResponse.data, 
+      fetchedKyc: kycResponse.data 
+    };
   } catch (error: any) {
     throw new Error("Failed to submit KYC data: " + (error.message || "Unknown error"));
   }
 };
 
-// I have created a fetcher to get KYC data by userId.
-const kycFetchFetcher = async (url: string, { arg }: { arg: string }) => {
+const kycFetchFetcher = async (url: string) => {
   try {
-    const response = await axiosInstance.get(`/kyc?userId=${arg}`);
+    const response = await axiosInstance.get(url);
     return response.data as KycData[];
-  } catch (error: any) {
-    throw new Error("Failed to fetch KYC data: " + (error.message || "Unknown error"));
+  } catch (error) {
+    throw new Error("Failed to fetch KYC data");
   }
 };
 
-// I have updated useKycSubmit to handle userId and auto-approve KYC.
 export const useKycSubmit = () => {
   const { setUser, user } = useAuthStore();
-  const { trigger: submitTrigger, isMutating: isSubmitting, error: submitError } = useSWRMutation("/kyc", kycSubmitFetcher, {
+  const { 
+    trigger: submitTrigger, 
+    isMutating: isSubmitting, 
+    error: submitError 
+  } = useSWRMutation("/kyc", kycSubmitFetcher, {
     revalidate: false,
     populateCache: false,
     throwOnError: false,
   });
-  const { trigger: fetchTrigger, data: kycData, error: fetchError } = useSWRMutation("/kyc", kycFetchFetcher, {
-    revalidate: false,
-    populateCache: false,
-    throwOnError: false,
-  });
-  const [fetchedKycData, setFetchedKycData] = useState<KycData | null>(null);
 
-  // I have fetched KYC data for approved users.
-  useEffect(() => {
-    const fetchKycData = async () => {
-      if (!user?.id || user?.kycStatus !== "approved") return;
-      try {
-        console.log(`KycSubmit: Fetching KYC data for userId - ${user.id}`);
-        const data = await fetchTrigger(user.id);
-        if (data && data.length > 0) {
-          setFetchedKycData(data[0]);
-          console.log(`KycSubmit: Fetched KYC data - ${JSON.stringify(data[0])}`);
-        } else {
-          console.log(`KycSubmit: No KYC data found for userId - ${user.id}`);
-        }
-      } catch (err: any) {
-        console.log(`KycSubmit: Fetch error - ${err.message}`);
-      }
-    };
-    fetchKycData();
-  }, [user?.id, user?.kycStatus, fetchTrigger]);
+  const { 
+    data: kycData, 
+    error: fetchError, 
+    isLoading: isFetching,
+    mutate: mutateKyc
+  } = useSWR(
+    user?.id ? `/kyc?userId=${user.id}` : null,
+    kycFetchFetcher,
+    {
+      revalidateOnFocus: false,
+      dedupingInterval: 60000,
+    }
+  );
 
   const submitKyc = useCallback(
     async (userId: string, kycData: KycData) => {
       try {
-        console.log(`KycSubmit: Sending POST to /kyc and PATCH to /users/${userId} with data:`, {
-          ...kycData,
-        });
         const response = await submitTrigger({ userId, kycData });
         if (!response) {
           throw new Error("No response from server");
         }
+        
         const { user: updatedUser, fetchedKyc } = response;
         const userData = {
           id: updatedUser.id,
-          firstname: updatedUser.firstname || "Guest",
+          firstname: updatedUser.firstname || "",
           lastname: updatedUser.lastname || "",
           email: updatedUser.email,
           token: updatedUser.token ?? "",
-          kycStatus: updatedUser.kycStatus || "not-started",
+          kycStatus: updatedUser.kycStatus || "approved",
         };
+        
         setUser(userData);
-        setFetchedKycData(fetchedKyc);
-        console.log(`KycSubmit: User updated in store - User: ${JSON.stringify(userData)}`);
-        console.log(`KycSubmit: KYC data set - ${JSON.stringify(fetchedKyc)}`);
+        await mutateKyc([fetchedKyc]);
         return userData;
       } catch (err: any) {
-        console.log(`KycSubmit: Error - ${err.message}`);
         throw new Error(err.message || "KYC submission failed. Please try again.");
       }
     },
-    [submitTrigger, setUser]
+    [submitTrigger, setUser, mutateKyc]
   );
 
-  return { submitKyc, isSubmitting, submitError, kycData: fetchedKycData, fetchError };
+  // Get the first item if array exists, or null
+  const userKycData = kycData && kycData.length > 0 ? kycData[0] : null;
+
+  return { 
+    submitKyc, 
+    isSubmitting, 
+    submitError, 
+    kycData: userKycData, 
+    fetchError, 
+    isFetching 
+  };
 };

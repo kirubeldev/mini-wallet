@@ -1,51 +1,92 @@
 "use client";
-
 import type React from "react";
-import { useState } from "react";
+import { useState, useMemo, useCallback, lazy, Suspense, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/AuthStore";
 import { useTheme } from "@/hooks/UseTheamHook";
 import Layout from "@/components/LayoutNavs";
 import { Button } from "@/components/ui/button";
 import Toast from "@/components/Toast";
-import KYCSuccessDialog from "@/components/kycSuccesDialog"; 
-import { CheckCircleIcon, ClockIcon, ExclamationTriangleIcon } from "@heroicons/react/24/outline";
+import Skeleton from "react-loading-skeleton";
+import { CheckCircleIcon, ExclamationTriangleIcon } from "@heroicons/react/24/outline";
 import { useKycSubmit } from "@/hooks/UseKycSubmit";
-import { useAutoLogin } from "@/hooks/UseAuthHook"; 
+import { useAutoLogin } from "@/hooks/UseAuthHook";
 
-// I have updated KYC.tsx to add userId field, remove initialBalance, and show dialogs for 3 seconds each.
+const KYCSuccessDialog = lazy(() => import("../../components/kycSuccesDialog"));
+
 export default function KYC() {
   const router = useRouter();
   const { user } = useAuthStore();
-  const { submitKyc, isSubmitting, submitError, kycData, fetchError } = useKycSubmit();
+  const { submitKyc, isSubmitting, submitError, kycData, fetchError, isFetching } = useKycSubmit();
   const { isLoading: isAutoLoginLoading, error: autoLoginError } = useAutoLogin();
   const { theme } = useTheme();
   const [formData, setFormData] = useState({
     userId: user?.id || "",
-    fullName: kycData?.fullName || "",
-    documentType: kycData?.documentType || "national_id",
-    documentNumber: kycData?.documentNumber || "",
-    gender: kycData?.gender || "",
-    dob: kycData?.dob || "",
-    address: kycData?.address || "",
-    country: kycData?.country || "",
-    photoUrl: kycData?.photoUrl || "",
+    fullName: "",
+    documentType: "national_id",
+    documentNumber: "",
+    gender: "",
+    dob: "",
+    address: "",
+    country: "",
+    photoUrl: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
   const [showProcessingDialog, setShowProcessingDialog] = useState(false);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+  const [ageError, setAgeError] = useState(false);
 
-  const documentTypes = [
-    { value: "national_id", label: "National ID" },
-    { value: "passport", label: "Passport" },
-    { value: "driver_license", label: "Driver License" },
-  ];
+  // Initialize form data when kycData or user changes
+  useEffect(() => {
+    if (kycData && user?.id && kycData.userId === user.id) {
+      setFormData({
+        userId: user.id,
+        fullName: kycData.fullName || "",
+        documentType: kycData.documentType || "national_id",
+        documentNumber: kycData.documentNumber || "",
+        gender: kycData.gender || "",
+        dob: kycData.dob || "",
+        address: kycData.address || "",
+        country: kycData.country || "",
+        photoUrl: kycData.photoUrl || "",
+      });
+    }
+  }, [kycData, user?.id]);
 
-  // I have updated validation to include userId and exclude initialBalance.
+ 
+  const documentTypes = useMemo(
+    () => [
+      { value: "national_id", label: "National ID" },
+      { value: "passport", label: "Passport" },
+      { value: "driver_license", label: "Driver License" },
+    ],
+    []
+  );
+
+  const countries = useMemo(
+    () => [
+      { value: "ET", label: "🇪🇹 Ethiopia" },
+      { value: "US", label: "🇺🇸 United States" },
+      { value: "GB", label: "🇬🇧 United Kingdom" },
+      { value: "CA", label: "🇨🇦 Canada" },
+      { value: "DE", label: "🇩🇪 Germany" },
+      { value: "FR", label: "🇫🇷 France" },
+      { value: "IN", label: "🇮🇳 India" },
+      { value: "JP", label: "🇯🇵 Japan" },
+      { value: "CN", label: "🇨🇳 China" },
+      { value: "BR", label: "🇧🇷 Brazil" },
+      { value: "AU", label: "🇦🇺 Australia" },
+      { value: "ZA", label: "🇿🇦 South Africa" },
+      { value: "NG", label: "🇳🇬 Nigeria" },
+      { value: "KE", label: "🇰🇪 Kenya" },
+      { value: "EG", label: "🇪🇬 Egypt" },
+    ],
+    []
+  );
+
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
-    if (!formData.userId.trim()) newErrors.userId = "User ID is required";
     if (!formData.fullName.trim()) newErrors.fullName = "Full name is required";
     if (!formData.documentType) newErrors.documentType = "Document type is required";
     if (!formData.documentNumber.trim()) newErrors.documentNumber = "Document number is required";
@@ -55,6 +96,8 @@ export default function KYC() {
     if (!formData.country) newErrors.country = "Country is required";
     if (!formData.photoUrl.trim()) newErrors.photoUrl = "Photo URL is required";
     setErrors(newErrors);
+
+    // Return true if no errors, false otherwise
     return Object.keys(newErrors).length === 0;
   };
 
@@ -72,19 +115,24 @@ export default function KYC() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validateForm()) {
-      setToast({ message: "Please fill all required fields correctly.", type: "error" });
-      return;
-    }
-    if (!user?.id || formData.userId !== user.id) {
+    if (!user?.id) {
       setToast({ message: "Invalid user ID. Please log in again.", type: "error" });
       router.push("/login");
       return;
     }
 
+    if (!validateForm()) {
+      if (ageError) {
+        setToast({ message: "You must be at least 18 years old to submit KYC.", type: "error" });
+      } else if (!toast || toast.message !== "You must be at least 18 years old to submit KYC data.") {
+        setToast({ message: "Please fill all required fields correctly.", type: "error" });
+      }
+      return;
+    }
+
     try {
       const kycData = {
-        userId: formData.userId,
+        userId: user.id,
         fullName: formData.fullName,
         documentType: formData.documentType,
         documentNumber: formData.documentNumber,
@@ -144,17 +192,47 @@ export default function KYC() {
     }
   };
 
-  if (isAutoLoginLoading || (user?.kycStatus === "approved" && !kycData && !fetchError)) {
+  const isApproved = user?.kycStatus === "approved";
+  const showReadOnlyFields = isApproved;
+
+  if (isAutoLoginLoading || isFetching) {
     return (
       <Layout>
-        <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-          Loading...
+        <div className="space-y-6 p-6">
+          <div>
+            <Skeleton height={32} width={200} />
+            <Skeleton height={16} width={300} />
+          </div>
+          <div className="border rounded-lg p-6">
+            <Skeleton circle height={32} width={32} />
+            <Skeleton height={20} width={150} />
+            <Skeleton height={16} width={250} />
+          </div>
+          <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+            <Skeleton height={24} width={200} />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+              {[...Array(5)].map((_, i) => (
+                <Skeleton key={i} height={40} />
+              ))}
+            </div>
+            <Skeleton height={80} />
+            <Skeleton height={40} />
+            <Skeleton height={40} width={200} />
+          </div>
+          <div className="border rounded-lg p-6">
+            <Skeleton height={24} width={150} />
+            {[...Array(4)].map((_, i) => (
+              <Skeleton key={i} height={16} width={200} />
+            ))}
+          </div>
         </div>
       </Layout>
     );
   }
+
   if (autoLoginError) {
     console.log(`AutoLogin Error: ${autoLoginError.message}`);
+    setToast({ message: "Failed to authenticate. Please log in again.", type: "error" });
   }
   if (fetchError) {
     console.log(`KycFetch Error: ${fetchError.message}`);
@@ -188,163 +266,187 @@ export default function KYC() {
         {/* KYC Form */}
         <div className="bg-white dark:bg-gray-800 shadow rounded-lg">
           <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white">Identity Verification Form</h3>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+              {showReadOnlyFields ? "Your KYC Information" : "Identity Verification Form"}
+            </h3>
           </div>
 
           <form onSubmit={handleSubmit} className="p-6 space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">User ID</label>
-                {user?.kycStatus === "approved" ? (
-                  <p className="mt-1 text-sm text-gray-900 dark:text-white py-2">{formData.userId}</p>
-                ) : (
-                  <input
-                    type="text"
-                    value={formData.userId}
-                    onChange={(e) => setFormData({ ...formData, userId: e.target.value })}
-                    className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    disabled
-                  />
-                )}
-                {errors.userId && <p className="mt-1 text-sm text-red-600">{errors.userId}</p>}
-              </div>
-
+              {/* Full Name */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Full Name</label>
-                {user?.kycStatus === "approved" ? (
-                  <p className="mt-1 text-sm text-gray-900 dark:text-white py-2">{formData.fullName}</p>
+                {showReadOnlyFields ? (
+                  <div className="mt-1 p-2 rounded-md border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700">
+                    <p className="text-sm text-gray-900 dark:text-white">{formData.fullName}</p>
+                  </div>
                 ) : (
-                  <input
-                    type="text"
-                    value={formData.fullName}
-                    onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                    className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    disabled={isSubmitting}
-                  />
+                  <>
+                    <input
+                      type="text"
+                      value={formData.fullName}
+                      onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                      className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      disabled={isSubmitting}
+                    />
+                    {errors.fullName && <p className="mt-1 text-sm text-red-600">{errors.fullName}</p>}
+                  </>
                 )}
-                {errors.fullName && <p className="mt-1 text-sm text-red-600">{errors.fullName}</p>}
               </div>
 
+              {/* Document Type */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Document Type</label>
-                {user?.kycStatus === "approved" ? (
-                  <p className="mt-1 text-sm text-gray-900 dark:text-white py-2">
-                    {documentTypes.find((type) => type.value === formData.documentType)?.label}
-                  </p>
+                {showReadOnlyFields ? (
+                  <div className="mt-1 p-2 rounded-md border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700">
+                    <p className="text-sm text-gray-900 dark:text-white">
+                      {documentTypes.find((type) => type.value === formData.documentType)?.label}
+                    </p>
+                  </div>
                 ) : (
-                  <select
-                    value={formData.documentType}
-                    onChange={(e) => setFormData({ ...formData, documentType: e.target.value })}
-                    className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    disabled={isSubmitting}
-                  >
-                    {documentTypes.map((type) => (
-                      <option key={type.value} value={type.value}>
-                        {type.label}
-                      </option>
-                    ))}
-                  </select>
+                  <>
+                    <select
+                      value={formData.documentType}
+                      onChange={(e) => setFormData({ ...formData, documentType: e.target.value })}
+                      className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      disabled={isSubmitting}
+                    >
+                      {documentTypes.map((type) => (
+                        <option key={type.value} value={type.value}>
+                          {type.label}
+                        </option>
+                      ))}
+                    </select>
+                    {errors.documentType && <p className="mt-1 text-sm text-red-600">{errors.documentType}</p>}
+                  </>
                 )}
-                {errors.documentType && <p className="mt-1 text-sm text-red-600">{errors.documentType}</p>}
               </div>
 
+              {/* Document Number */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                   {getDocumentNumberLabel()}
                 </label>
-                {user?.kycStatus === "approved" ? (
-                  <p className="mt-1 text-sm text-gray-900 dark:text-white py-2">{formData.documentNumber}</p>
+                {showReadOnlyFields ? (
+                  <div className="mt-1 p-2 rounded-md border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700">
+                    <p className="text-sm text-gray-900 dark:text-white">{formData.documentNumber}</p>
+                  </div>
                 ) : (
-                  <input
-                    type="text"
-                    value={formData.documentNumber}
-                    onChange={(e) => setFormData({ ...formData, documentNumber: e.target.value })}
-                    className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    disabled={isSubmitting}
-                  />
+                  <>
+                    <input
+                      type="text"
+                      value={formData.documentNumber}
+                      onChange={(e) => setFormData({ ...formData, documentNumber: e.target.value })}
+                      className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      disabled={isSubmitting}
+                    />
+                    {errors.documentNumber && <p className="mt-1 text-sm text-red-600">{errors.documentNumber}</p>}
+                  </>
                 )}
-                {errors.documentNumber && <p className="mt-1 text-sm text-red-600">{errors.documentNumber}</p>}
               </div>
 
+              {/* Gender */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Gender</label>
-                {user?.kycStatus === "approved" ? (
-                  <p className="mt-1 text-sm text-gray-900 dark:text-white py-2 capitalize">{formData.gender}</p>
+                {showReadOnlyFields ? (
+                  <div className="mt-1 p-2 rounded-md border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700">
+                    <p className="text-sm text-gray-900 dark:text-white capitalize">{formData.gender}</p>
+                  </div>
                 ) : (
-                  <select
-                    value={formData.gender}
-                    onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
-                    className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    disabled={isSubmitting}
-                  >
-                    <option value="">Select Gender</option>
-                    <option value="male">Male</option>
-                    <option value="female">Female</option>
-                  </select>
+                  <>
+                    <select
+                      value={formData.gender}
+                      onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+                      className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      disabled={isSubmitting}
+                    >
+                      <option value="">Select Gender</option>
+                      <option value="male">Male</option>
+                      <option value="female">Female</option>
+                    </select>
+                    {errors.gender && <p className="mt-1 text-sm text-red-600">{errors.gender}</p>}
+                  </>
                 )}
-                {errors.gender && <p className="mt-1 text-sm text-red-600">{errors.gender}</p>}
               </div>
 
+              {/* Date of Birth */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Date of Birth</label>
-                {user?.kycStatus === "approved" ? (
-                  <p className="mt-1 text-sm text-gray-900 dark:text-white py-2">
-                    {formData.dob ? new Date(formData.dob).toLocaleDateString() : ""}
-                  </p>
+                {showReadOnlyFields ? (
+                  <div className="mt-1 p-2 rounded-md border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700">
+                    <p className="text-sm text-gray-900 dark:text-white">
+                      {formData.dob ? new Date(formData.dob).toLocaleDateString() : ""}
+                    </p>
+                  </div>
                 ) : (
-                  <input
-                    type="date"
-                    value={formData.dob}
-                    onChange={(e) => setFormData({ ...formData, dob: e.target.value })}
+                  <>
+                    <input
+                      type="date"
+                      value={formData.dob}
+                      onChange={(e) => setFormData({ ...formData, dob: e.target.value })}
+                      className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      disabled={isSubmitting}
+                    />
+                    {errors.dob && <p className="mt-1 text-sm text-red-600">{errors.dob}</p>}
+                  </>
+                )}
+              </div>
+
+              {/* Country */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Country</label>
+                {showReadOnlyFields ? (
+                  <div className="mt-1 p-2 rounded-md border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700">
+                    <p className="text-sm text-gray-900 dark:text-white">
+                      {countries.find((c) => c.value === formData.country)?.label || formData.country}
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    <select
+                      value={formData.country}
+                      onChange={(e) => setFormData({ ...formData, country: e.target.value })}
+                      className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      disabled={isSubmitting}
+                    >
+                      <option value="">Select Country</option>
+                      {countries.map((country) => (
+                        <option key={country.value} value={country.value}>
+                          {country.label}
+                        </option>
+                      ))}
+                    </select>
+                    {errors.country && <p className="mt-1 text-sm text-red-600">{errors.country}</p>}
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Address */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Address</label>
+              {showReadOnlyFields ? (
+                <div className="mt-1 p-2 rounded-md border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700">
+                  <p className="text-sm text-gray-900 dark:text-white">{formData.address}</p>
+                </div>
+              ) : (
+                <>
+                  <textarea
+                    value={formData.address}
+                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                    rows={3}
                     className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
                     disabled={isSubmitting}
                   />
-                )}
-                {errors.dob && <p className="mt-1 text-sm text-red-600">{errors.dob}</p>}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Country</label>
-                {user?.kycStatus === "approved" ? (
-                  <p className="mt-1 text-sm text-gray-900 dark:text-white py-2">{formData.country}</p>
-                ) : (
-                  <select
-                    value={formData.country}
-                    onChange={(e) => setFormData({ ...formData, country: e.target.value })}
-                    className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    disabled={isSubmitting}
-                  >
-                    <option value="">Select Country</option>
-                    <option value="ET">Ethiopia</option>
-                    <option value="US">United States</option>
-                    <option value="GB">United Kingdom</option>
-                    <option value="CA">Canada</option>
-                    <option value="DE">Germany</option>
-                  </select>
-                )}
-                {errors.country && <p className="mt-1 text-sm text-red-600">{errors.country}</p>}
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Address</label>
-              {user?.kycStatus === "approved" ? (
-                <p className="mt-1 text-sm text-gray-900 dark:text-white py-2">{formData.address}</p>
-              ) : (
-                <textarea
-                  value={formData.address}
-                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                  rows={3}
-                  className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  disabled={isSubmitting}
-                />
+                  {errors.address && <p className="mt-1 text-sm text-red-600">{errors.address}</p>}
+                </>
               )}
-              {errors.address && <p className="mt-1 text-sm text-red-600">{errors.address}</p>}
             </div>
 
+            {/* Photo URL */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Selfie Photo URL</label>
-              {user?.kycStatus === "approved" ? (
+              {showReadOnlyFields ? (
                 <div className="mt-2">
                   <img
                     src={formData.photoUrl || "/placeholder.svg"}
@@ -379,9 +481,14 @@ export default function KYC() {
               )}
             </div>
 
-            {user?.kycStatus !== "approved" && (
+            {/* Submit Button */}
+            {!isApproved && (
               <div className="flex justify-start">
-            <Button type="submit" className="w-fit  text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500" disabled={isSubmitting}>
+                <Button
+                  type="submit"
+                  className="w-fit text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  disabled={isSubmitting}
+                >
                   {isSubmitting ? "Submitting..." : "Submit KYC Information"}
                 </Button>
               </div>
@@ -408,7 +515,7 @@ export default function KYC() {
             <div className="fixed inset-0 bg-gray-500 bg-opacity-75" />
             <div className="relative bg-white dark:bg-gray-800 rounded-lg p-6 shadow-xl max-w-md w-full">
               <div className="text-center">
-                <ClockIcon className="mx-auto h-12 w-12 text-yellow-500 mb-4" />
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mx-auto mb-4"></div>
                 <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Processing Your Application</h3>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                   Your KYC verification is being processed. Please wait...
@@ -419,12 +526,14 @@ export default function KYC() {
         </div>
       )}
 
-      {/* Success Dialog */}
-      <KYCSuccessDialog
-        isOpen={showSuccessDialog}
-        onClose={() => setShowSuccessDialog(false)}
-        onRedirect={() => router.push("/dashboard")}
-      />
+      {/* Success Dialog with Suspense */}
+      <Suspense fallback={<div>Loading dialog...</div>}>
+        <KYCSuccessDialog
+          isOpen={showSuccessDialog}
+          onClose={() => setShowSuccessDialog(false)}
+          onRedirect={() => router.push("/dashboard")}
+        />
+      </Suspense>
 
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </Layout>

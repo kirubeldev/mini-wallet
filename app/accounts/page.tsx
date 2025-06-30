@@ -21,7 +21,6 @@ export default function Accounts() {
     name: "",
     accountNumber: "",
     balance: "",
-    currency: user?.currency || "ETB",
     type: "bank" as "bank" | "crypto",
     bankName: "CBE",
   })

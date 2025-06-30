@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-"dev": "concurrently \"next dev\" \"json-server --watch db.json --port 4000\"",
+    "dev": "concurrently \"next dev\" \"json-server --watch db.json --port 4000\"",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
@@ -20,9 +20,11 @@
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-hot-toast": "^2.5.2",
+    "react-loading-skeleton": "^3.5.0",
     "recharts": "^3.0.2",
     "swr": "^2.3.3",
     "tailwind-merge": "^3.3.1",
+    "uuid": "^11.1.0",
     "zustand": "^5.0.6"
   },
   "devDependencies": {

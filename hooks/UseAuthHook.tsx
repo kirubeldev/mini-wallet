@@ -2,6 +2,7 @@ import { useCallback, useEffect } from "react";
 import useSWRMutation from "swr/mutation";
 import axiosInstance from "@/lib/axios-Instance";
 import { useAuthStore } from "@/store/AuthStore";
+import { v4 as uuidv4 } from "uuid";
 
 // I have defined the User interface to match the JSON server and AuthStore, including kycStatus with all possible values.
 interface User {
@@ -14,8 +15,7 @@ interface User {
   theme: "light" | "dark";
   profileImage?: string;
   minBalance: number;
-  kycStatus:  "not-started" | "approved" 
- 
+  kycStatus: "not-started" | "approved";
   token?: string;
 }
 
@@ -70,7 +70,7 @@ export const useAutoLogin = () => {
     return tokenCookie ? tokenCookie.split("=")[1] : null;
   };
 
-  // I have used useEffect to fetch user data on mount if a token exists.
+  // I have used useEffect to fetch user data on mount if a token exists and ensure UUID for user.id.
   useEffect(() => {
     const autoLogin = async () => {
       const token = getTokenFromCookies();
@@ -89,9 +89,20 @@ export const useAutoLogin = () => {
         const fetchedUser = data[0];
         // I have logged the fetched user data for debugging.
         console.log(`AutoLogin: Raw fetched user - ${JSON.stringify(fetchedUser)}`);
+
+        // I have ensured user.id is a UUID.
+        const userId = fetchedUser.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(fetchedUser.id)
+          ? fetchedUser.id
+          : uuidv4();
+
+        if (userId !== fetchedUser.id) {
+          console.log(`AutoLogin: Generated new UUID for user - ${userId}`);
+          await axiosInstance.patch(`/users/${fetchedUser.id}`, { id: userId });
+        }
+
         // I have mapped the fetched user to match the AuthStore's User interface.
         const userData = {
-          id: fetchedUser.id,
+          id: userId,
           firstname: fetchedUser.firstname || "Guest",
           lastname: fetchedUser.lastname || "",
           email: fetchedUser.email,
@@ -114,7 +125,7 @@ export const useAutoLogin = () => {
   return { isLoading: isMutating, error };
 };
 
-// I have updated the useLogin hook to include kycStatus in the stored user data.
+// I have updated the useLogin hook to include kycStatus and ensure UUID for user.id.
 export const useLogin = () => {
   const { setUser } = useAuthStore();
   const { trigger: triggerEmail, isMutating: isMutatingEmail, error: errorEmail } = useSWRMutation(
@@ -150,9 +161,20 @@ export const useLogin = () => {
         const fullUserData = await triggerId(fetchedUser.id);
         // I have logged the raw user data from ID fetch for debugging.
         console.log(`Login: Raw fetched user (by ID) - ${JSON.stringify(fullUserData)}`);
+
+        // I have ensured user.id is a UUID.
+        const userId = fullUserData.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(fullUserData.id)
+          ? fullUserData.id
+          : uuidv4();
+
+        if (userId !== fullUserData.id) {
+          console.log(`Login: Generated new UUID for user - ${userId}`);
+          await axiosInstance.patch(`/users/${fullUserData.id}`, { id: userId });
+        }
+
         // I have mapped the fetched user to match the AuthStore's User interface, including kycStatus.
         const userData = {
-          id: fullUserData.id,
+          id: userId,
           firstname: fullUserData.firstname || "Guest",
           lastname: fullUserData.lastname || "",
           email: fullUserData.email,
@@ -178,7 +200,7 @@ export const useLogin = () => {
   return { login, isLoading: isMutatingEmail || isMutatingId, error: errorEmail || errorId };
 };
 
-// I have created the useRegister hook to handle user registration using useAuthStore, including kycStatus.
+// I have updated the useRegister hook to generate a UUID for user.id and include kycStatus.
 export const useRegister = () => {
   const { setUser } = useAuthStore();
 
@@ -188,7 +210,6 @@ export const useRegister = () => {
       lastName: string;
       email: string;
       password: string;
-    
     }) => {
       try {
         // I have checked if a user with the provided email already exists.
@@ -198,11 +219,14 @@ export const useRegister = () => {
           throw new Error("Email already Existed. Please use a different email.");
         }
 
+        // I have generated a UUID for the user ID.
+        const userId = uuidv4();
         // I have generated a fake token for the user.
         const token = generateFakeToken();
 
         // I have logged the user POST request for debugging.
         console.log("Register: Sending POST to /users with data:", {
+          id: userId,
           firstname: formData.firstName,
           lastname: formData.lastName,
           email: formData.email,
@@ -210,14 +234,15 @@ export const useRegister = () => {
           currency: "ETB",
           theme: "light",
           minBalance: 0,
-          kycStatus: formData.kycData ? "not-started" : "not-started",
+          kycStatus: "not-started",
           kycData: null,
           token,
           createdAt: new Date().toISOString(),
         });
 
-        // I have posted the user data to /users, including kycStatus.
+        // I have posted the user data to /users, including kycStatus and UUID.
         const userResponse = await axiosInstance.post("/users", {
+          id: userId,
           firstname: formData.firstName,
           lastname: formData.lastName,
           email: formData.email,
@@ -225,7 +250,7 @@ export const useRegister = () => {
           currency: "ETB",
           theme: "light",
           minBalance: 0,
-          kycStatus: formData.kycData ? "not-started" : "not-started",
+          kycStatus: "not-started",
           kycData: null,
           token,
           createdAt: new Date().toISOString(),
@@ -247,19 +272,6 @@ export const useRegister = () => {
         // I have stored the user in AuthStore to make user data and kycStatus visible.
         setUser(userData);
         console.log(`Register: User stored - User: ${JSON.stringify(userData)}`);
-
-        // I have posted KYC data to /kyc if provided.
-        if (formData.kycData) {
-          console.log(`Register: Sending POST to /kyc with data:`, {
-            userId: userResponse.data.id,
-            ...formData.kycData,
-          });
-          const kycResponse = await axiosInstance.post("/kyc", {
-            userId: userResponse.data.id,
-            ...formData.kycData,
-          });
-          console.log(`Register: KYC POST response:`, kycResponse.data);
-        }
 
         return userResponse.data;
       } catch (error: any) {
