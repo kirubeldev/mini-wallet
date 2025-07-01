@@ -73,7 +73,6 @@ export default function Transactions() {
 
   const itemsPerPage = 10;
 
-  
   const filteredTransactions = transactions
     .filter((transaction) => {
       const fromWallet = senderWallets.find((w) => w.walletId === transaction.fromWallet);
@@ -130,18 +129,35 @@ export default function Transactions() {
     }
   };
 
-  const getTypeIcon = (type: string) => {
-    switch (type) {
-      case "deposit":
-        return "⬇️";
-      case "withdraw":
-        return "⬆️";
-      case "transfer":
-        return "↔️";
-      case "receive":
-        return "⬇️";
-      default:
-        return "💰";
+  // Define the Transaction type if not imported from elsewhere
+  type Transaction = {
+    id: string;
+    fromWallet: string;
+    toWallet: string;
+    amount: number;
+    serviceCharge: number;
+    status: string;
+    type: string;
+    reason?: string;
+    timestamp: string;
+    [key: string]: any;
+  };
+
+  const getTypeIcon = (transaction: Transaction, userId: string | null) => {
+    const fromWallet = senderWallets.find((w) => w.walletId === transaction.fromWallet);
+    const toWallet =
+      senderWallets.find((w) => w.walletId === transaction.toWallet) ||
+      receiverWallets.find((w) => w.walletId === transaction.toWallet);
+
+    const isSender = fromWallet?.userId === userId;
+    const isReceiver = toWallet?.userId === userId;
+
+    if (isSender) {
+      return { icon: "⬆️", type: "send" };
+    } else if (isReceiver) {
+      return { icon: "⬇️", type: "receive" };
+    } else {
+      return { icon: "💰", type: transaction.type };
     }
   };
 
@@ -164,7 +180,7 @@ export default function Transactions() {
       setToast({ message: "Please complete KYC to perform transactions.", type: "error" });
       return;
     }
-    setUserSearchTerm(""); // Reset search term
+    setUserSearchTerm("");
     setShowTransferModal(true);
   };
 
@@ -421,48 +437,51 @@ export default function Transactions() {
               </TableHeader>
               <TableBody>
                 {paginatedTransactions.length > 0 ? (
-                  paginatedTransactions.map((transaction) => (
-                    <TableRow key={transaction.id}>
-                      <TableCell>
-                        <div className="flex items-center">
-                          <span className="text-lg mr-2">{getTypeIcon(transaction.type)}</span>
-                          <span className="capitalize">{transaction.type}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div>
-                          <div className="font-medium">{new Date(transaction.timestamp).toLocaleDateString()}</div>
-                          <div className="text-sm text-gray-500 dark:text-gray-400">
-                            {new Date(transaction.timestamp).toLocaleTimeString()}
+                  paginatedTransactions.map((transaction) => {
+                    const { icon, type } = getTypeIcon(transaction, userId);
+                    return (
+                      <TableRow key={transaction.id}>
+                        <TableCell>
+                          <div className="flex items-center">
+                            <span className="text-lg mr-2">{icon}</span>
+                            <span className="capitalize">{type}</span>
                           </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>{transaction.fromWallet ? getWalletName(transaction.fromWallet) : "-"}</TableCell>
-                      <TableCell>{transaction.toWallet ? getWalletName(transaction.toWallet) : "-"}</TableCell>
-                      <TableCell>
-                        <div>
-                          <div className="font-medium">
-                            {transaction.amount.toFixed(2)} USD
-                          </div>
-                          {transaction.serviceCharge > 0 && (
-                            <div className="text-xs text-gray-500 dark:text-gray-400">
-                              Fee: {transaction.serviceCharge.toFixed(2)} USD
+                        </TableCell>
+                        <TableCell>
+                          <div>
+                            <div className="font-medium">{new Date(transaction.timestamp).toLocaleDateString()}</div>
+                            <div className="text-sm text-gray-500 dark:text-gray-400">
+                              {new Date(transaction.timestamp).toLocaleTimeString()}
                             </div>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <span
-                          className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(
-                            transaction.status
-                          )}`}
-                        >
-                          {transaction.status}
-                        </span>
-                      </TableCell>
-                      <TableCell>{transaction.reason ? truncateText(transaction.reason, 20) : "-"}</TableCell>
-                    </TableRow>
-                  ))
+                          </div>
+                        </TableCell>
+                        <TableCell>{transaction.fromWallet ? getWalletName(transaction.fromWallet) : "-"}</TableCell>
+                        <TableCell>{transaction.toWallet ? getWalletName(transaction.toWallet) : "-"}</TableCell>
+                        <TableCell>
+                          <div>
+                            <div className="font-medium">
+                              {transaction.amount.toFixed(2)} USD
+                            </div>
+                            {transaction.serviceCharge > 0 && (
+                              <div className="text-xs text-gray-500 dark:text-gray-400">
+                                Fee: {transaction.serviceCharge.toFixed(2)} USD
+                              </div>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <span
+                            className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(
+                              transaction.status
+                            )}`}
+                          >
+                            {transaction.status}
+                          </span>
+                        </TableCell>
+                        <TableCell>{transaction.reason ? truncateText(transaction.reason, 20) : "-"}</TableCell>
+                      </TableRow>
+                    );
+                  })
                 ) : (
                   <TableRow>
                     <TableCell colSpan={7} className="text-center text-gray-500 dark:text-gray-400 py-8">
@@ -533,192 +552,193 @@ export default function Transactions() {
           </div>
         )}
 
-         <Dialog open={showTransferModal} onOpenChange={setShowTransferModal}>
-      <DialogContent className="sm:max-w-md max-h-[70vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Transfer Money</DialogTitle>
-        </DialogHeader>
-        <form onSubmit={handleTransferSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Transfer Type</label>
-            <select
-              value={transferData.transferType}
-              onChange={(e) => {
-                setTransferData({
-                  ...transferData,
-                  transferType: e.target.value as "internal" | "external",
-                  toWallet: "",
-                  externalUser: "",
-                });
-                setExternalUserId(null);
-              }}
-              className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
-            >
-              <option value="internal">Between My Wallets</option>
-              <option value="external">To Other Users</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">From Wallet</label>
-            <select
-              value={transferData.fromWallet}
-              onChange={(e) => setTransferData({ ...transferData, fromWallet: e.target.value })}
-              className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              disabled={isLoadingSenderWallets || senderWallets.length === 0}
-            >
-              <option value="">Select wallet</option>
-              {senderWallets.map((wallet) => (
-                <option key={wallet.walletId} value={wallet.walletId}>
-                  {wallet.accountNumber} - {wallet.balance} USD
-                </option>
-              ))}
-            </select>
-            {senderWalletsError && (
-              <p className="mt-1 text-sm text-red-600">Error: {senderWalletsError}</p>
-            )}
-          </div>
-          {transferData.transferType === "internal" ? (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">To Wallet</label>
-              <select
-                value={transferData.toWallet}
-                onChange={(e) => setTransferData({ ...transferData, toWallet: e.target.value })}
-                className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                disabled={isLoadingSenderWallets || senderWallets.length <= 1}
-              >
-                {senderWallets.length <= 1 ? (
-                  <option value="">No other wallets available</option>
-                ) : (
-                  <>
-                    <option value="">Select wallet</option>
-                    {senderWallets
-                      .filter((w) => w.walletId !== transferData.fromWallet)
-                      .map((wallet) => (
-                        <option key={wallet.walletId} value={wallet.walletId}>
-                          {wallet.accountNumber} - {wallet.balance} USD
-                        </option>
-                      ))}
-                  </>
-                )}
-              </select>
-              {senderWallets.length <= 1 && (
-                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                  You need at least two wallets to transfer between them.
-                </p>
-              )}
-            </div>
-          ) : (
-            <>
+        <Dialog open={showTransferModal} onOpenChange={setShowTransferModal}>
+          <DialogContent className="sm:max-w-md max-h-[70vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Transfer Money</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleTransferSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">To User</label>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setShowUserSearchModal(true)}
-                  className="mt-1 w-full text-left"
-                  disabled={isLoadingUsers}
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Transfer Type</label>
+                <select
+                  value={transferData.transferType}
+                  onChange={(e) => {
+                    setTransferData({
+                      ...transferData,
+                      transferType: e.target.value as "internal" | "external",
+                      toWallet: "",
+                      externalUser: "",
+                    });
+                    setExternalUserId(null);
+                  }}
+                  className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 >
-                  {transferData.externalUser
-                    ? externalUsers.find((u) => u.id === transferData.externalUser)?.name || "Select recipient"
-                    : "Select recipient"}
-                </Button>
-                {usersError && (
-                  <p className="mt-1 text-sm text-red-600">Error: {usersError}</p>
-                )}
+                  <option value="internal">Between My Wallets</option>
+                  <option value="external">To Other Users</option>
+                </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">To Wallet</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">From Wallet</label>
                 <select
-                  value={transferData.toWallet}
-                  onChange={(e) => setTransferData({ ...transferData, toWallet: e.target.value })}
+                  value={transferData.fromWallet}
+                  onChange={(e) => setTransferData({ ...transferData, fromWallet: e.target.value })}
                   className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  disabled={isLoadingReceiverWallets || !transferData.externalUser || receiverWallets.length === 0}
+                  disabled={isLoadingSenderWallets || senderWallets.length === 0}
                 >
                   <option value="">Select wallet</option>
-                  {receiverWallets.map((wallet) => (
+                  {senderWallets.map((wallet) => (
                     <option key={wallet.walletId} value={wallet.walletId}>
                       {wallet.accountNumber} - {wallet.balance} USD
                     </option>
                   ))}
                 </select>
-                {receiverWalletsError && (
-                  <p className="mt-1 text-sm text-red-600">Error: {receiverWalletsError}</p>
-                )}
-                {receiverWallets.length === 0 && transferData.externalUser && !isLoadingReceiverWallets && !receiverWalletsError && (
-                  <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                    No wallets available for selected user.
-                  </p>
+                {senderWalletsError && (
+                  <p className="mt-1 text-sm text-red-600">Error: {senderWalletsError}</p>
                 )}
               </div>
-            </>
-          )}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Amount</label>
-            <input
-              type="number"
-              step="0.01"
-              value={transferData.amount}
-              onChange={(e) => setTransferData({ ...transferData, amount: e.target.value })}
-              className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Reason</label>
-            <input
-              type="text"
-              value={transferData.reason}
-              onChange={(e) => setTransferData({ ...transferData, reason: e.target.value })}
-              className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              placeholder="Optional"
-            />
-          </div>
-          <div className="flex justify-end space-x-3">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                setShowTransferModal(false);
-                setUserSearchTerm("");
-                setExternalUserId(null);
-              }}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              disabled={
-                isMutating ||
-                !transferData.fromWallet ||
-                (transferData.transferType === "internal" && (!transferData.toWallet || senderWallets.length <= 1)) ||
-                (transferData.transferType === "external" && (!transferData.externalUser || !transferData.toWallet))
-              }
-              className="bg-blue-600 hover:bg-blue-700 text-white"
-            >
-              {isMutating ? (
-                <>
-                  <svg
-                    className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
+              {transferData.transferType === "internal" ? (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">To Wallet</label>
+                  <select
+                    value={transferData.toWallet}
+                    onChange={(e) => setTransferData({ ...transferData, toWallet: e.target.value })}
+                    className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    disabled={isLoadingSenderWallets || senderWallets.length <= 1}
                   >
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    />
-                  </svg>
-                  Paying...
-                </>
+                    {senderWallets.length <= 1 ? (
+                      <option value="">No other wallets available</option>
+                    ) : (
+                      <>
+                        <option value="">Select wallet</option>
+                        {senderWallets
+                          .filter((w) => w.walletId !== transferData.fromWallet)
+                          .map((wallet) => (
+                            <option key={wallet.walletId} value={wallet.walletId}>
+                              {wallet.accountNumber} - {wallet.balance} USD
+                            </option>
+                          ))}
+                      </>
+                    )}
+                  </select>
+                  {senderWallets.length <= 1 && (
+                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                      You need at least two wallets to transfer between them.
+                    </p>
+                  )}
+                </div>
               ) : (
-                "Pay"
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">To User</label>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setShowUserSearchModal(true)}
+                      className="mt-1 w-full text-left"
+                      disabled={isLoadingUsers}
+                    >
+                      {transferData.externalUser
+                        ? externalUsers.find((u) => u.id === transferData.externalUser)?.name || "Select recipient"
+                        : "Select recipient"}
+                    </Button>
+                    {usersError && (
+                      <p className="mt-1 text-sm text-red-600">Error: {usersError}</p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">To Wallet</label>
+                    <select
+                      value={transferData.toWallet}
+                      onChange={(e) => setTransferData({ ...transferData, toWallet: e.target.value })}
+                      className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      disabled={isLoadingReceiverWallets || !transferData.externalUser || receiverWallets.length === 0}
+                    >
+                      <option value="">Select wallet</option>
+                      {receiverWallets.map((wallet) => (
+                        <option key={wallet.walletId} value={wallet.walletId}>
+                          {wallet.accountNumber} - {wallet.balance} USD
+                        </option>
+                      ))}
+                    </select>
+                    {receiverWalletsError && (
+                      <p className="mt-1 text-sm text-red-600">Error: {receiverWalletsError}</p>
+                    )}
+                    {receiverWallets.length === 0 && transferData.externalUser && !isLoadingReceiverWallets && !receiverWalletsError && (
+                      <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                        No wallets available for selected user.
+                      </p>
+                    )}
+                  </div>
+                </>
               )}
-            </Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Amount</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={transferData.amount}
+                  onChange={(e) => setTransferData({ ...transferData, amount: e.target.value })}
+                  className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Reason</label>
+                <input
+                  type="text"
+                  value={transferData.reason}
+                  onChange={(e) => setTransferData({ ...transferData, reason: e.target.value })}
+                  className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  placeholder="Optional"
+                />
+              </div>
+              <div className="flex justify-end space-x-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setShowTransferModal(false);
+                    setUserSearchTerm("");
+                    setExternalUserId(null);
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={
+                    isMutating ||
+                    !transferData.fromWallet ||
+                    (transferData.transferType === "internal" && (!transferData.toWallet || senderWallets.length <= 1)) ||
+                    (transferData.transferType === "external" && (!transferData.externalUser || !transferData.toWallet))
+                  }
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  {isMutating ? (
+                    <>
+                      <svg
+                        className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        />
+                      </svg>
+                      Paying...
+                    </>
+                  ) : (
+                    "Pay"
+                  )}
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
+
         <Dialog open={showUserSearchModal} onOpenChange={setShowUserSearchModal}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
@@ -760,7 +780,6 @@ export default function Transactions() {
                       </div>
                       <div>
                         <p className="font-medium">{user.name}</p>
-                       
                       </div>
                     </div>
                   ))

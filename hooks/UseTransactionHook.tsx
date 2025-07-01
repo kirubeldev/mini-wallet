@@ -1,4 +1,4 @@
-import { useCallback, useState, useMemo } from "react";
+import { useCallback, useState } from "react";
 import useSWR from "swr";
 import useSWRMutation from "swr/mutation";
 import axiosInstance from "@/lib/axios-Instance";
@@ -189,6 +189,8 @@ export const useTransactions = () => {
     isLoading: isLoadingUsers,
   } = useSWR<User[]>("/users", fetcher);
 
+  console.log("Fetched users:", users);
+
   const {
     data: senderWallets = [],
     error: senderWalletsError,
@@ -245,18 +247,15 @@ export const useTransactions = () => {
     }
   );
 
-  const externalUsers = useMemo(() => {
-    if (!users || !Array.isArray(users)) return [];
-    
-    return users
-      .filter((u) => u.id !== userId && u.kycStatus !== "not-started") // Only exclude current user
-      .map((u) => ({
-        id: u.id,
-        name: `${u.firstname || ""} ${u.lastname || ""}`.trim() || u.email,
-        profileImage: u.profileImage,
-      
-      }));
-  }, [users, userId]);
+  const externalUsers = users
+    .filter((u) => u.id !== userId && u.kycStatus !== "not-started")
+    .map((u) => ({
+      id: u.id,
+      name: `${u.firstname || ""} ${u.lastname || ""}`.trim() || u.email,
+      profileImage: u.profileImage,
+    }));
+
+  console.log("External users:", externalUsers);
 
   const mutateAll = useCallback(async () => {
     await Promise.all([mutateSenderWallets(), mutateReceiverWallets(), mutateTransactions()]);
