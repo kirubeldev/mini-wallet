@@ -73,18 +73,7 @@ export default function Transactions() {
 
   const itemsPerPage = 10;
 
-  useEffect(() => {
-    if (!userId && !isLoadingTransactions) {
-      setToast({ message: "Please log in to view transactions.", type: "error" });
-      router.replace("/auth/login");
-      return;
-    }
-    if (user?.kycStatus !== "approved" && !isLoadingTransactions) {
-      setToast({ message: "KYC approval required.", type: "error" });
-      router.replace("/kyc");
-    }
-  }, [userId, user?.kycStatus, setToast, router, isLoadingTransactions]);
-
+  
   const filteredTransactions = transactions
     .filter((transaction) => {
       const fromWallet = senderWallets.find((w) => w.walletId === transaction.fromWallet);
