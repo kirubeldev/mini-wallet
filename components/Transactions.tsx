@@ -629,7 +629,7 @@ export default function Transactions() {
                   <option value="">Select wallet</option>
                   {senderWallets.map((wallet) => (
                     <option key={wallet.walletId} value={wallet.walletId}>
-                      {wallet.accountNumber} - {wallet.balance} USD
+                      {wallet.accountNumber} 
                     </option>
                   ))}
                 </select>
@@ -655,7 +655,7 @@ export default function Transactions() {
                           .filter((w) => w.walletId !== transferData.fromWallet)
                           .map((wallet) => (
                             <option key={wallet.walletId} value={wallet.walletId}>
-                              {wallet.accountNumber} - {wallet.balance} USD
+                              {wallet.accountNumber}
                             </option>
                           ))}
                       </>
@@ -697,7 +697,7 @@ export default function Transactions() {
                       <option value="">Select wallet</option>
                       {receiverWallets.map((wallet) => (
                         <option key={wallet.walletId} value={wallet.walletId}>
-                          {wallet.accountNumber} - {wallet.balance} USD
+                          {wallet.accountNumber} 
                         </option>
                       ))}
                     </select>

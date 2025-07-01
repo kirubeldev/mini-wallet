@@ -1,5 +1,5 @@
-
 import type React from "react";
+import { useEffect } from "react";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 
 interface ToastProps {
@@ -14,6 +14,14 @@ const toastStyles = {
 };
 
 export default function Toast({ message, type, onClose }: ToastProps) {
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      onClose();
+    }, 3000); // Dismiss after 3 seconds
+
+    return () => clearTimeout(timer); // Cleanup timer on unmount
+  }, [onClose]);
+
   return (
     <div
       className={`fixed top-4 left-1/2 transform -translate-x-1/2 z-[1000] min-w-[300px] max-w-[500px] w-full p-4 rounded-md shadow-lg border ${toastStyles[type]} flex items-center justify-between custom-toast`}
