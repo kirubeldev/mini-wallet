@@ -1,10 +1,35 @@
 import axios from "axios";
 
-// I have created an Axios instance here with the local server base URL for development and an environment variable for Vercel deployment.
+// Function to manually extract a specific cookie value
+function getCookieValue(name: string): string | null {
+  const match: RegExpMatchArray | null = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+  return match ? decodeURIComponent(match[2]) : null;
+}
+
 const axiosInstance = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000", // I have set this to use the proxy locally or the backend URL on Vercel.
-  headers: { "Content-Type": "application/json" },
-  // withCredentials: true, // i will enable this when i need to send cookies with real backend requests
+  baseURL: process.env.NEXT_PUBLIC_API_URL || "https://miniwallet-json-3.onrender.com",
+  headers: {
+    "Content-Type": "application/json",
+  },
+  // withCredentials: true, // Enable this if the backend uses cookies (like HttpOnly) and needs to read them on cross-origin
 });
+
+// Request interceptor: attach token from browser cookie
+axiosInstance.interceptors.request.use(
+  (config) => {
+    const token = getCookieValue("token"); // Make sure 'token' is the actual name of your cookie
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+// Optional response interceptor
+axiosInstance.interceptors.response.use(
+  (response) => response,
+  (error) => Promise.reject(error)
+);
 
 export default axiosInstance;

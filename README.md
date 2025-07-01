@@ -33,16 +33,47 @@ Next.js · Tailwind CSS · Zustand · SWR · json-server · Jest
 
 ---
 
+
+
+
+
+
+
+
 ## ⚙️ Setup & Run
 
 ```bash
-npm install
-npm run dev 
+
+
+
+1) npm install
 
 
 
 
-📦 Services
+2) in the package.json part add this on the script
+
+    "dev": "concurrently \"next dev\" \"json-server --watch db.json --port 4000\"",
+
+
+
+
+
+
+ i have updated the endpoint to the render instade of the local db.server for global use
+
+3) npm run dev 
+
+
+
+
+
+
+
+
+
+
+📦 Services,  this is for the container 
 app — Next.js development server (http://localhost:3000)
 
 api — json-server for fake REST API (http://localhost:4000)

@@ -27,6 +27,62 @@
       "kycData": null,
       "token": "token-mlxn0ji4n-1751314787516",
       "createdAt": "2025-06-30T20:19:47.517Z"
+    },
+    {
+      "id": "ea72537e-ff5f-4795-a93b-42cc676aa842",
+      "firstname": "minte",
+      "lastname": "minte",
+      "email": "icogadmin@icog.et1",
+      "password": "123456",
+      "currency": "USD",
+      "theme": "light",
+      "profileImage": "",
+      "kycStatus": "not-started",
+      "kycData": null,
+      "token": "token-v8rca93bb-1751320097896",
+      "createdAt": "2025-06-30T21:48:17.897Z"
+    },
+    {
+      "id": "6a63fa41-0c0a-4730-9461-53b4a64b2dcb",
+      "firstname": "kirubel",
+      "lastname": "tekuame",
+      "email": "kirubel.menberu@icog.et3",
+      "password": "123456",
+      "currency": "USD",
+      "theme": "light",
+      "profileImage": "",
+      "kycStatus": "not-started",
+      "kycData": null,
+      "token": "token-day593pn0-1751320208487",
+      "createdAt": "2025-06-30T21:50:08.488Z"
+    },
+    {
+      "id": "63a7557f-8ab3-4d57-a5f0-3af6bc346488",
+      "firstname": "minte",
+      "lastname": "tesnot",
+      "email": "kirubel.menberu@icog.et9",
+      "password": "123456",
+      "currency": "USD",
+      "theme": "light",
+      "profileImage": "",
+      "kycStatus": "not-started",
+      "kycData": null,
+      "token": "token-7kckij422-1751320493804",
+      "createdAt": "2025-06-30T21:54:53.806Z"
+    },
+    {
+      "id": "b740760e-d2cc-43d0-b23f-4df2ce1386c3",
+      "firstname": "kirubel",
+      "lastname": "minte",
+      "email": "icogadmin@icog.et0",
+      "password": "234324",
+      "currency": "USD",
+      "theme": "light",
+      "profileImage": "",
+      "kycStatus": "not-started",
+      "kycData": null,
+      "token": "token-vjjp1gmt9-1751320551059",
+      "createdAt": "2025-06-30T21:55:51.060Z"
     }
   ],
   "wallets": [
