@@ -42,7 +42,7 @@ interface ExternalUser {
 }
 
 export default function Transactions() {
-  const router = useRouter
+  const router = useRouter();
   const { user } = useAuthStore();
   const userId = user?.id || null;
   const {
@@ -55,6 +55,9 @@ export default function Transactions() {
     receiverWallets,
     receiverWalletsError,
     isLoadingReceiverWallets,
+    allWallets,
+    walletsError,
+    isLoadingAllWallets,
     setExternalUserId,
     transfer,
     transferToExternal,
@@ -103,15 +106,15 @@ export default function Transactions() {
         const response = await axiosInstance.get("/users");
         const data = response.data;
         const users = Array.isArray(data) ? data : [data];
-        console.log("Fetched users:", users); // Debugging log
+        console.log("Fetched users:", users);
         const filteredUsers = users
-          .filter((u: User) => u.id !== userId && u.kycStatus !== "not-started")
+          .filter((u: User) => u.id !== userId)
           .map((u: User) => ({
             id: u.id,
             name: `${u.firstname || ""} ${u.lastname || ""}`.trim() || u.email,
             profileImage: u.profileImage,
           }));
-        console.log("External users:", filteredUsers); // Debugging log
+        console.log("External users:", filteredUsers);
         setExternalUsers(filteredUsers);
         setUsersError(null);
       } catch (error: any) {
@@ -130,10 +133,8 @@ export default function Transactions() {
 
   const filteredTransactions = transactions
     .filter((transaction) => {
-      const fromWallet = senderWallets.find((w) => w.walletId === transaction.fromWallet);
-      const toWallet =
-        senderWallets.find((w) => w.walletId === transaction.toWallet) ||
-        receiverWallets.find((w) => w.walletId === transaction.toWallet);
+      const fromWallet = allWallets.find((w) => w.walletId === transaction.fromWallet);
+      const toWallet = allWallets.find((w) => w.walletId === transaction.toWallet);
       const fromWalletName = fromWallet?.accountNumber || "Unknown Wallet";
       const toWalletName = toWallet?.accountNumber || "Unknown Wallet";
       const matchesSearch =
@@ -165,9 +166,7 @@ export default function Transactions() {
   const paginatedTransactions = filteredTransactions.slice(startIndex, startIndex + itemsPerPage);
 
   const getWalletName = (walletId: string) => {
-    const wallet =
-      senderWallets.find((w) => w.walletId === walletId) ||
-      receiverWallets.find((w) => w.walletId === walletId);
+    const wallet = allWallets.find((w) => w.walletId === walletId);
     return wallet ? wallet.accountNumber : "Unknown Wallet";
   };
 
@@ -185,10 +184,8 @@ export default function Transactions() {
   };
 
   const getTypeIcon = (transaction: any, userId: string | null) => {
-    const fromWallet = senderWallets.find((w) => w.walletId === transaction.fromWallet);
-    const toWallet =
-      senderWallets.find((w) => w.walletId === transaction.toWallet) ||
-      receiverWallets.find((w) => w.walletId === transaction.toWallet);
+    const fromWallet = allWallets.find((w) => w.walletId === transaction.fromWallet);
+    const toWallet = allWallets.find((w) => w.walletId === transaction.toWallet);
 
     const isSender = fromWallet?.userId === userId;
     const isReceiver = toWallet?.userId === userId;
@@ -331,7 +328,7 @@ export default function Transactions() {
     setUserSearchTerm("");
   };
 
-  if (isLoadingTransactions || isLoadingSenderWallets) {
+  if (isLoadingTransactions || isLoadingSenderWallets || isLoadingAllWallets) {
     return (
       <Layout>
         <div className="space-y-6 p-6">
@@ -371,6 +368,9 @@ export default function Transactions() {
         )}
         {senderWalletsError && (
           <p className="text-red-600 dark:text-red-400">Error: {senderWalletsError}</p>
+        )}
+        {walletsError && (
+          <p className="text-red-600 dark:text-red-400">Error: {walletsError}</p>
         )}
         {usersError && <p className="text-red-600 dark:text-red-400">Error: {usersError}</p>}
         {receiverWalletsError && (

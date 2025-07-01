@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useState, useEffect } from "react";
 import useSWR from "swr";
 import useSWRMutation from "swr/mutation";
 import axiosInstance from "@/lib/axios-Instance";
@@ -40,6 +40,16 @@ const fetchWalletsByUserId = async (url: string, { arg }: { arg: string }) => {
     return response.data as Wallet[];
   } catch (error: any) {
     throw new Error("Failed to fetch wallets");
+  }
+};
+
+const fetchAllWallets = async () => {
+  try {
+    const response = await axiosInstance.get("/wallets");
+    const data = response.data;
+    return Array.isArray(data) ? data : [data];
+  } catch (error: any) {
+    throw new Error("Failed to fetch all wallets");
   }
 };
 
@@ -149,6 +159,30 @@ export const useTransactions = () => {
   const userId = user?.id;
   const [externalUserId, setExternalUserId] = useState<string | null>(null);
   const [toast, setToast] = useState<Toast | null>(null);
+  const [allWallets, setAllWallets] = useState<Wallet[]>([]);
+  const [walletsError, setWalletsError] = useState<string | null>(null);
+  const [isLoadingAllWallets, setIsLoadingAllWallets] = useState(false);
+
+  // Fetch all wallets on mount
+  useEffect(() => {
+    const fetchWallets = async () => {
+      setIsLoadingAllWallets(true);
+      try {
+        const wallets = await fetchAllWallets();
+        console.log("All wallets:", wallets); // Debugging log
+        setAllWallets(wallets);
+        setWalletsError(null);
+      } catch (error: any) {
+        console.error("Error fetching all wallets:", error);
+        setWalletsError(error.message || "Failed to fetch wallets");
+        setAllWallets([]);
+      } finally {
+        setIsLoadingAllWallets(false);
+      }
+    };
+
+    fetchWallets();
+  }, []);
 
   const {
     data: senderWallets = [],
@@ -220,6 +254,9 @@ export const useTransactions = () => {
     receiverWallets,
     receiverWalletsError: receiverWalletsError?.message,
     isLoadingReceiverWallets,
+    allWallets,
+    walletsError,
+    isLoadingAllWallets,
     setExternalUserId,
     transfer: async (fromWallet: string, toWallet: string, amount: number, reason: string, password: string) => {
       await transfer({ fromWallet, toWallet, amount, reason, password });

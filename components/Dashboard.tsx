@@ -14,109 +14,174 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 import { truncateText } from "@/lib/utils";
 import axiosInstance from "@/lib/axios-Instance";
 
-const getWalletName = async (walletId: string) => {
-  try {
-    const walletsResponse = await axiosInstance.get(`/wallets?walletId=${walletId}`);
-    const wallet = walletsResponse.data[0];
-    if (!wallet) {
-      return { display: "Unknown Wallet", image: null, initials: "??" };
-    }
+interface User {
+  id: string;
+  firstname: string;
+  lastname: string;
+  email: string;
+  password: string;
+  currency: string;
+  theme: string;
+  profileImage: string;
+  kycStatus: "not-started" | "approved";
+  kycData: null | object;
+  token: string;
+  createdAt: string;
+}
 
-    const userResponse = await axiosInstance.get(`/users/${wallet.userId}`);
-    const user = userResponse.data;
-    if (!user) {
-      return { display: "Unknown User", image: null, initials: "??" };
-    }
-
-    const kycResponse = await axiosInstance.get(`/kyc?userId=${wallet.userId}`);
-    const kyc = kycResponse.data[0];
-    const display = kyc?.fullName || `${user.firstname} ${user.lastname}`;
-    const initials = user.firstname && user.lastname ? `${user.firstname[0]}${user.lastname[0]}` : "??";
-    const image = kyc?.photoUrl || user.profileImage || null;
-
-    return { display, image: image ? `${image}?t=${Date.now()}` : null, initials };
-  } catch (error) {
-    console.error("Error fetching wallet name:", error);
-    return { display: "Unknown Wallet", image: null, initials: "??" };
-  }
-};
+interface Kyc {
+  userId: string;
+  fullName: string;
+  photoUrl: string | null;
+}
 
 export default function Dashboard() {
   const { user, balanceVisible, toggleBalanceVisibility } = useWalletStore();
-  const { transactions, senderWallets, receiverWallets, isLoadingTransactions, transactionsError } = useTransactions();
+  const {
+    transactions,
+    senderWallets,
+    allWallets,
+    isLoadingTransactions,
+    isLoadingAllWallets,
+    transactionsError,
+    walletsError,
+  } = useTransactions();
   const router = useRouter();
   const [lowBalanceDialog, setLowBalanceDialog] = useState<{
     isOpen: boolean;
     wallet?: any;
   }>({ isOpen: false });
-  const [walletNames, setWalletNames] = useState<{
-    [key: string]: { display: string; image: string | null; initials: string | null };
-  }>({});
-  const [isLoadingWalletNames, setIsLoadingWalletNames] = useState(true);
+  const [users, setUsers] = useState<User[]>([]);
+  const [kycData, setKycData] = useState<Kyc[]>([]);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(false);
+  const [usersError, setUsersError] = useState<string | null>(null);
 
-  // Memoize recentTransactions to prevent unnecessary re-renders
+  // Fetch users and KYC data
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoadingUsers(true);
+      try {
+        const usersResponse = await axiosInstance.get("/users");
+        const usersData = Array.isArray(usersResponse.data) ? usersResponse.data : [usersResponse.data];
+        setUsers(usersData);
+
+        const kycResponse = await axiosInstance.get("/kyc");
+        const kycData = Array.isArray(kycResponse.data) ? kycResponse.data : [kycResponse.data];
+        setKycData(kycData);
+
+        setUsersError(null);
+      } catch (error: any) {
+        console.error("Error fetching users or KYC data:", error);
+        setUsersError(error.message || "Failed to fetch users");
+        setUsers([]);
+        setKycData([]);
+      } finally {
+        setIsLoadingUsers(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  // Calculate total balance
+  const totalBalance = useMemo(() => senderWallets.reduce((sum, wallet) => sum + wallet.balance, 0), [senderWallets]);
+  const minBalanceThreshold = 200;
+  const isLowBalance = totalBalance < minBalanceThreshold;
+
+  // Show low balance dialog on load if total balance is below threshold
+  useEffect(() => {
+    if (!isLoadingTransactions && !isLoadingAllWallets && !isLoadingUsers && isLowBalance) {
+      setLowBalanceDialog({ isOpen: true, wallet: null });
+    }
+  }, [isLoadingTransactions, isLoadingAllWallets, isLoadingUsers, isLowBalance]);
+
+  // Memoize recentTransactions
   const recentTransactions = useMemo(() => transactions.slice(0, 5), [transactions]);
 
-  // Memoize balanceData to ensure stable reference
-  const balanceData = useMemo(
-    () =>
-      transactions
-        .filter((t) => t.fromWallet === senderWallets[0]?.walletId || t.toWallet === senderWallets[0]?.walletId)
-        .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
-        .reduce(
-          (acc, t) => {
-            const date = new Date(t.timestamp).toLocaleDateString("en-US", { month: "short", year: "numeric" });
-            const lastEntry = acc[acc.length - 1];
-            let newBalance = lastEntry ? lastEntry.balance : 200; // Assume initial balance of 200 USD
+  // Calculate balance history for all sender wallets
+  const balanceData = useMemo(() => {
+    const userWalletIds = senderWallets.map((w) => w.walletId);
+    const relevantTransactions = transactions
+      .filter((t) => userWalletIds.includes(t.fromWallet) || userWalletIds.includes(t.toWallet))
+      .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
-            if (t.type === "transfer" && t.fromWallet === senderWallets[0]?.walletId) {
-              newBalance -= t.amount + (t.serviceCharge || 0);
-            } else if (t.type === "receive" && t.toWallet === senderWallets[0]?.walletId) {
-              newBalance += t.amount;
-            }
+    let currentBalance = totalBalance;
+    const balanceHistory: { date: string; balance: number }[] = [];
 
-            if (!acc.some((entry) => entry.date === date)) {
-              acc.push({ date, balance: newBalance });
-            } else {
-              acc[acc.length - 1].balance = newBalance;
-            }
+    const transactionsByDate = relevantTransactions.reduce((acc, t) => {
+      const date = new Date(t.timestamp).toLocaleDateString("en-US", { month: "short", year: "numeric" });
+      if (!acc[date]) acc[date] = [];
+      acc[date].push(t);
+      return acc;
+    }, {} as { [key: string]: any[] });
 
-            return acc;
-          },
-          [] as { date: string; balance: number }[]
-        ),
-    [transactions, senderWallets]
-  );
+    const dates = Object.keys(transactionsByDate).sort(
+      (a, b) => new Date(b).getTime() - new Date(a).getTime()
+    );
 
-  const totalBalance = useMemo(() => senderWallets.reduce((sum, wallet) => sum + wallet.balance, 0), [senderWallets]);
-  const isLowBalance = totalBalance <  200
-
-  useEffect(() => {
-    const fetchWalletNames = async () => {
-      setIsLoadingWalletNames(true);
-      const names: { [key: string]: { display: string; image: string | null; initials: string | null } } = {};
-      for (const transaction of recentTransactions) {
-        if (transaction.toWallet && !names[transaction.toWallet]) {
-          names[transaction.toWallet] = await getWalletName(transaction.toWallet);
+    for (const date of dates) {
+      const transactionsForDate = transactionsByDate[date].reverse();
+      for (const t of transactionsForDate) {
+        if (t.type === "transfer" && userWalletIds.includes(t.fromWallet)) {
+          currentBalance += t.amount + (t.serviceCharge || 0);
+        } else if (t.type === "receive" && userWalletIds.includes(t.toWallet)) {
+          currentBalance -= t.amount;
         }
       }
-      setWalletNames(names);
-      setIsLoadingWalletNames(false);
-    };
-    fetchWalletNames();
-  }, [recentTransactions]);
+      balanceHistory.unshift({ date, balance: currentBalance });
+    }
 
-  // Fixed color for LineChart to avoid randomness
-  const lineColor = "#8884d8";
+    const currentDate = new Date().toLocaleDateString("en-US", { month: "short", year: "numeric" });
+    if (!balanceHistory.some((entry) => entry.date === currentDate)) {
+      balanceHistory.push({ date: currentDate, balance: totalBalance });
+    }
 
-  const wallets = useMemo(
-    () =>
-      senderWallets.map((wallet) => ({
-        ...wallet,
-        name: user?.firstname ? `${user.firstname} ${user.lastname}` : "Wallet",
-      })),
-    [senderWallets, user]
-  );
+    return balanceHistory;
+  }, [transactions, senderWallets, totalBalance]);
+
+  // Get wallet name
+  const getWalletName = (walletId: string) => {
+    const wallet = allWallets.find((w) => w.walletId === walletId);
+    if (!wallet) {
+      return { display: "Unknown Wallet", initials: "??" };
+    }
+    const user = users.find((u) => u.id === wallet.userId);
+    const kyc = kycData.find((k) => k.userId === wallet.userId);
+    const display = kyc?.fullName || (user ? `${user.firstname} ${user.lastname}`.trim() : "Unknown User");
+    const initials = kyc?.fullName
+      ? kyc.fullName.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()
+      : user && user.firstname && user.lastname
+      ? `${user.firstname[0]}${user.lastname[0]}`.toUpperCase()
+      : "??";
+    return { display: display || wallet.accountNumber, initials };
+  };
+
+  // Get transaction type icon and label
+  const getTypeIcon = (transaction: any) => {
+    const userWalletIds = senderWallets.map((w) => w.walletId);
+    const fromWallet = allWallets.find((w) => w.walletId === transaction.fromWallet);
+    const toWallet = allWallets.find((w) => w.walletId === transaction.toWallet);
+
+    const isSender = fromWallet && userWalletIds.includes(fromWallet.walletId);
+    const isReceiver = toWallet && userWalletIds.includes(toWallet.walletId);
+
+    if (isSender) {
+      return { icon: "⬆️", type: "send" };
+    } else if (isReceiver) {
+      return { icon: "⬇️", type: "receive" };
+    } else {
+      switch (transaction.type) {
+        case "deposit":
+          return { icon: "⬇️", type: "deposit" };
+        case "withdraw":
+          return { icon: "⬆️", type: "withdraw" };
+        case "transfer":
+          return { icon: "↔️", type: "transfer" };
+        default:
+          return { icon: "💰", type: transaction.type };
+      }
+    }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -131,25 +196,33 @@ export default function Dashboard() {
     }
   };
 
-  const getTypeIcon = (type: string) => {
-    switch (type) {
-      case "deposit":
-        return "⬇️";
-      case "withdraw":
-        return "⬆️";
-      case "transfer":
-        return "↔️";
-      default:
-        return "💰";
-    }
-  };
+  const wallets = useMemo(
+    () =>
+      senderWallets.map((wallet) => ({
+        ...wallet,
+        name: user?.firstname ? `${user.firstname} ${user.lastname}` : "Wallet",
+      })),
+    [senderWallets, user]
+  );
 
-  if (isLoadingTransactions || isLoadingWalletNames) {
-    return <Layout><div>Loading dashboard...</div></Layout>;
+  const lineColor = "#8884d8";
+
+  if (isLoadingTransactions || isLoadingAllWallets || isLoadingUsers) {
+    return (
+      <Layout>
+        <div>Loading dashboard...</div>
+      </Layout>
+    );
   }
 
-  if (transactionsError) {
-    return <Layout><div>Error loading dashboard: {transactionsError.message}</div></Layout>;
+  if (transactionsError || walletsError || usersError) {
+    return (
+      <Layout>
+        <div>
+          Error loading dashboard: {transactionsError || walletsError || usersError}
+        </div>
+      </Layout>
+    );
   }
 
   return (
@@ -204,7 +277,7 @@ export default function Dashboard() {
             </div>
             {isLowBalance && (
               <div className="mt-3 text-sm text-red-600 dark:text-red-400">
-                ⚠️ Your balance is below the minimum threshold of {user?.minBalance} USD
+                ⚠️ Your total balance is below the minimum threshold of {minBalanceThreshold} USD
               </div>
             )}
           </div>
@@ -227,7 +300,7 @@ export default function Dashboard() {
                       dataKey="balance"
                       stroke={lineColor}
                       activeDot={{ r: 8 }}
-                      name="Wallet Balance (USD)"
+                      name="Total Wallet Balance (USD)"
                     />
                   </LineChart>
                 </ResponsiveContainer>
@@ -248,7 +321,7 @@ export default function Dashboard() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Type</TableHead>
-                      <TableHead>To Wallet</TableHead>
+                      <TableHead>To</TableHead>
                       <TableHead>Amount</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Reason</TableHead>
@@ -256,48 +329,32 @@ export default function Dashboard() {
                   </TableHeader>
                   <TableBody>
                     {recentTransactions.length > 0 ? (
-                      recentTransactions.map((transaction) => (
-                        <TableRow key={transaction.id}>
-                          <TableCell>
-                            <div className="flex items-center">
-                              <span className="text-lg mr-2">{getTypeIcon(transaction.type)}</span>
-                              <span className="capitalize">{transaction.type}</span>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            {transaction.toWallet ? (
+                      recentTransactions.map((transaction) => {
+                        const { icon, type } = getTypeIcon(transaction);
+                        const walletName = getWalletName(transaction.toWallet);
+                        return (
+                          <TableRow key={transaction.id}>
+                            <TableCell>
                               <div className="flex items-center">
-                                <div className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center mr-3">
-                                  {walletNames[transaction.toWallet]?.image ? (
-                                    <img
-                                      src={walletNames[transaction.toWallet].image!}
-                                      alt={walletNames[transaction.toWallet].display}
-                                      className="w-8 h-8 rounded-full object-cover"
-                                      onError={(e) => (e.currentTarget.src = "")}
-                                    />
-                                  ) : (
-                                    <span className="text-sm font-medium">
-                                      {walletNames[transaction.toWallet]?.initials || "??"}
-                                    </span>
-                                  )}
-                                </div>
-                                <span>{walletNames[transaction.toWallet]?.display || "Unknown Wallet"}</span>
+                                <span className="text-lg mr-2">{icon}</span>
+                                <span className="capitalize">{type}</span>
                               </div>
-                            ) : (
-                              "-"
-                            )}
-                          </TableCell>
-                          <TableCell className="font-medium">
-                            {transaction.amount} {transaction.currency}
-                          </TableCell>
-                          <TableCell>
-                            <span className={`capitalize ${getStatusColor(transaction.status)}`}>
-                              {transaction.status}
-                            </span>
-                          </TableCell>
-                          <TableCell>{transaction.reason ? truncateText(transaction.reason, 15) : "-"}</TableCell>
-                        </TableRow>
-                      ))
+                            </TableCell>
+                            <TableCell>
+                              {transaction.toWallet ? walletName.display : "-"}
+                            </TableCell>
+                            <TableCell className="font-medium">
+                              {transaction.amount.toFixed(2)} {transaction.currency}
+                            </TableCell>
+                            <TableCell>
+                              <span className={`capitalize ${getStatusColor(transaction.status)}`}>
+                                {transaction.status}
+                              </span>
+                            </TableCell>
+                            <TableCell>{transaction.reason ? truncateText(transaction.reason, 15) : "-"}</TableCell>
+                          </TableRow>
+                        );
+                      })
                     ) : (
                       <TableRow>
                         <TableCell colSpan={5} className="text-center text-gray-500 dark:text-gray-400 py-8">
@@ -317,7 +374,7 @@ export default function Dashboard() {
             <ATMCard
               key={wallet.id}
               account={wallet}
-              isLowBalance={wallet.balance < (user?.minBalance || 100)}
+              isLowBalance={wallet.balance < (user?.minBalance || minBalanceThreshold)}
               balanceVisible={balanceVisible}
               onToggleBalance={toggleBalanceVisibility}
               onLowBalanceAlert={() => setLowBalanceDialog({ isOpen: true, wallet })}
@@ -328,9 +385,9 @@ export default function Dashboard() {
         <LowBalanceDialog
           isOpen={lowBalanceDialog.isOpen}
           onClose={() => setLowBalanceDialog({ isOpen: false })}
-          accountName={lowBalanceDialog.wallet?.name || ""}
-          currentBalance={lowBalanceDialog.wallet?.balance || 0}
-          minBalance={user?.minBalance || 100}
+          accountName={lowBalanceDialog.wallet?.name || "All Wallets"}
+          currentBalance={lowBalanceDialog.wallet?.balance || totalBalance}
+          minBalance={minBalanceThreshold}
           currency={lowBalanceDialog.wallet?.currency || user?.currency || "USD"}
         />
       </div>
