@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useState, useMemo } from "react";
 import useSWR from "swr";
 import useSWRMutation from "swr/mutation";
 import axiosInstance from "@/lib/axios-Instance";
@@ -10,10 +10,14 @@ interface User {
   firstname: string;
   lastname: string;
   email: string;
-  password?: string;
-  kycStatus: "not-started" | "approved";
+  password: string;
   currency: string;
-  profileImage?: string;
+  theme: string;
+  profileImage: string;
+  kycStatus: "not-started" | "approved";
+  kycData: null | object;
+  token: string;
+  createdAt: string;
 }
 
 interface Wallet {
@@ -23,6 +27,7 @@ interface Wallet {
   accountNumber: string;
   balance: number;
   currency: string;
+  createdAt: string;
 }
 
 interface Transaction {
@@ -43,7 +48,8 @@ interface ExternalUser {
   id: string;
   name: string;
   bankName: string;
-  profileImage?: string;
+  profileImage: string;
+  kycStatus: string;
 }
 
 interface Toast {
@@ -52,35 +58,50 @@ interface Toast {
 }
 
 const fetcher = async (url: string) => {
-  const response = await axiosInstance.get(url);
-  return response.data;
+  try {
+    const response = await axiosInstance.get(url);
+    const data = response.data;
+    return Array.isArray(data) ? data : [data];
+  } catch (error: any) {
+    throw new Error("Failed to fetch data");
+  }
 };
 
 const fetchWalletsByUserId = async (url: string, { arg }: { arg: string }) => {
-  const response = await axiosInstance.get(`${url}?userId=${arg}`);
-  return response.data as Wallet[];
+  try {
+    const response = await axiosInstance.get(`${url}?userId=${arg}`);
+    return response.data as Wallet[];
+  } catch (error: any) {
+    throw new Error("Failed to fetch wallets");
+  }
 };
 
 const fetchTransactionsByUserId = async (url: string, { arg }: { arg: string }) => {
-  const response = await axiosInstance.get("/wallets");
-  const wallets = response.data as Wallet[];
-  const userWalletIds = wallets.filter((w) => w.userId === arg).map((w) => w.walletId);
-  const transactionsResponse = await axiosInstance.get("/transactions");
-  const transactions = transactionsResponse.data as Transaction[];
-  return transactions.filter(
-    (t) => userWalletIds.includes(t.fromWallet) || userWalletIds.includes(t.toWallet)
-  );
+  try {
+    const response = await axiosInstance.get("/wallets");
+    const wallets = response.data as Wallet[];
+    const userWalletIds = wallets.filter((w) => w.userId === arg).map((w) => w.walletId);
+    const transactionsResponse = await axiosInstance.get("/transactions");
+    const transactions = transactionsResponse.data as Transaction[];
+    return transactions.filter(
+      (t) => userWalletIds.includes(t.fromWallet) || userWalletIds.includes(t.toWallet)
+    );
+  } catch (error: any) {
+    throw new Error("Failed to fetch transactions");
+  }
 };
 
 const updateWalletBalance = async (walletId: string, newBalance: number) => {
-  await axiosInstance.patch(`/wallets/${walletId}`, { balance: newBalance });
+  try {
+    await axiosInstance.patch(`/wallets/${walletId}`, { balance: newBalance });
+  } catch (error: any) {
+    throw new Error("Failed to update wallet balance");
+  }
 };
 
 const transferFetcher = async (
   url: string,
-  {
-    arg,
-  }: {
+  { arg }: {
     arg: {
       fromWallet: string;
       toWallet: string;
@@ -94,53 +115,35 @@ const transferFetcher = async (
 ) => {
   const { fromWallet, toWallet, amount, reason, userId, password, type = "transfer" } = arg;
 
-  console.log("transferFetcher: Starting transfer", { fromWallet, toWallet, amount, userId, type });
-
-  // Fetch user to verify password
   const userResponse = await axiosInstance.get(`/users/${userId}`);
   const user = userResponse.data as User;
   if (user.password !== password) {
-    console.error("transferFetcher: Incorrect password", { userId, providedPassword: password });
     throw new Error("Incorrect password");
   }
 
-  // Fetch wallets
   const walletsResponse = await axiosInstance.get("/wallets");
   const wallets = walletsResponse.data as Wallet[];
   const fromWalletData = wallets.find((w) => w.walletId === fromWallet);
   const toWalletData = wallets.find((w) => w.walletId === toWallet);
 
-  console.log("transferFetcher: Wallet data", {
-    fromWalletData: fromWalletData ? { walletId: fromWalletData.walletId, userId: fromWalletData.userId } : null,
-    toWalletData: toWalletData ? { walletId: toWalletData.walletId, userId: toWalletData.userId } : null,
-  });
-
   if (!fromWalletData || !toWalletData) {
-    console.error("transferFetcher: Invalid wallet IDs", { fromWallet, toWallet, wallets });
     throw new Error("Invalid wallet IDs");
   }
 
   if (fromWalletData.userId !== userId) {
-    console.error("transferFetcher: Unauthorized sender", { fromWallet, userId });
     throw new Error("Unauthorized: Sender wallet does not belong to user");
   }
 
-  const serviceCharge = amount * 0.002; // 0.2% service charge
+  const serviceCharge = amount * 0.002;
   const totalDeduction = amount + serviceCharge;
 
   if (fromWalletData.balance < totalDeduction) {
-    console.error("transferFetcher: Insufficient balance", {
-      balance: fromWalletData.balance,
-      totalDeduction,
-    });
     throw new Error("Insufficient balance");
   }
 
-  // Update wallet balances
   await updateWalletBalance(fromWalletData.id, fromWalletData.balance - totalDeduction);
   await updateWalletBalance(toWalletData.id, toWalletData.balance + amount);
 
-  // Create transaction
   const response = await axiosInstance.post(url, {
     id: `tx-${uuidv4()}`,
     userId,
@@ -155,7 +158,6 @@ const transferFetcher = async (
     timestamp: new Date().toISOString(),
   });
 
-  // Create receiver-side transaction for external transfers
   if (type === "receive") {
     await axiosInstance.post(url, {
       id: `tx-${uuidv4()}`,
@@ -172,7 +174,6 @@ const transferFetcher = async (
     });
   }
 
-  console.log("transferFetcher: Transfer completed", { transactionId: response.data.id });
   return response.data;
 };
 
@@ -186,32 +187,16 @@ export const useTransactions = () => {
     data: users = [],
     error: usersError,
     isLoading: isLoadingUsers,
-  } = useSWR<User[]>(userId ? "/users" : null, fetcher, {
-    revalidateOnFocus: false,
-  });
-
-  console.log("useTransactions: Fetched users", {
-    userId,
-    usersCount: users.length,
-    users: users.map((u) => ({
-      id: u.id,
-      email: u.email,
-      kycStatus: u.kycStatus,
-      firstname: u.firstname,
-      lastname: u.lastname,
-    })),
-    usersError: usersError?.message,
-    isLoadingUsers,
-  });
+  } = useSWR<User[]>("/users", fetcher);
 
   const {
     data: senderWallets = [],
     error: senderWalletsError,
     isLoading: isLoadingSenderWallets,
     mutate: mutateSenderWallets,
-  } = useSWR<Wallet[]>(userId ? ["/wallets", userId] : null, ([url, id]: [string, string]) => fetchWalletsByUserId(url, { arg: id }), {
-    revalidateOnFocus: false,
-  });
+  } = useSWR<Wallet[]>(userId ? ["/wallets", userId] : null, ([url, id]: [string, string]) =>
+    fetchWalletsByUserId(url, { arg: id })
+  );
 
   const {
     data: receiverWallets = [],
@@ -232,23 +217,15 @@ export const useTransactions = () => {
     ([url, id]: [string, string]) => fetchTransactionsByUserId(url, { arg: id })
   );
 
-  const externalUsers = useMemo(
-    () =>
-      users
-        .filter((u) => u.id !== userId && u.kycStatus === "approved")
-        .map((u) => ({
-          id: u.id,
-          name: `${u.firstname} ${u.lastname}`,
-          bankName: "Mini Wallet System",
-          profileImage: u.profileImage,
-        })),
-    [users, userId]
-  );
-
   const { trigger: transfer, isMutating } = useSWRMutation(
     "/transactions",
     (url, { arg }: { arg: { fromWallet: string; toWallet: string; amount: number; reason: string; password: string } }) =>
-      transferFetcher(url, { arg: { ...arg, userId: userId!, type: "transfer" } })
+      transferFetcher(url, { arg: { ...arg, userId: userId!, type: "transfer" } }),
+    {
+      onError: (error) => {
+        setToast({ message: error.message || "Transfer failed.", type: "error" });
+      },
+    }
   );
 
   const { trigger: transferToExternal } = useSWRMutation(
@@ -260,8 +237,26 @@ export const useTransactions = () => {
           userId: userId!,
           type: "receive",
         },
-      })
+      }),
+    {
+      onError: (error) => {
+        setToast({ message: error.message || "External transfer failed.", type: "error" });
+      },
+    }
   );
+
+  const externalUsers = useMemo(() => {
+    if (!users || !Array.isArray(users)) return [];
+    
+    return users
+      .filter((u) => u.id !== userId && u.kycStatus !== "not-started") // Only exclude current user
+      .map((u) => ({
+        id: u.id,
+        name: `${u.firstname || ""} ${u.lastname || ""}`.trim() || u.email,
+        profileImage: u.profileImage,
+      
+      }));
+  }, [users, userId]);
 
   const mutateAll = useCallback(async () => {
     await Promise.all([mutateSenderWallets(), mutateReceiverWallets(), mutateTransactions()]);
@@ -269,16 +264,16 @@ export const useTransactions = () => {
 
   return {
     transactions,
-    transactionsError,
+    transactionsError: transactionsError?.message,
     isLoadingTransactions,
     senderWallets,
-    senderWalletsError,
+    senderWalletsError: senderWalletsError?.message,
     isLoadingSenderWallets,
     externalUsers,
-    usersError,
+    usersError: usersError?.message,
     isLoadingUsers,
     receiverWallets,
-    receiverWalletsError,
+    receiverWalletsError: receiverWalletsError?.message,
     isLoadingReceiverWallets,
     setExternalUserId,
     transfer: async (fromWallet: string, toWallet: string, amount: number, reason: string, password: string) => {

@@ -167,10 +167,10 @@ export default function Settings() {
                     <div className="flex items-start gap-4">
                       <div className="relative h-20 w-20 rounded-full border-2 border-gray-200 overflow-hidden bg-gray-100">
                         <img
-                          src={formData.profileImage || "/placeholder.svg"}
+                          src={formData.profileImage || ""}
                           alt="Profile preview"
                           className="h-full w-full object-cover"
-                          onError={(e) => (e.currentTarget.src = "/placeholder.svg")}
+                          onError={(e) => (e.currentTarget.src = "")}
                         />
                       </div>
                       <div className="flex-1 space-y-2">
@@ -210,7 +210,7 @@ export default function Settings() {
                 <div className="flex justify-center mb-4">
                   <div className="relative h-24 w-24 rounded-full border-4 border-white shadow-lg overflow-hidden">
                     <img
-                      src={user.profileImage || "/placeholder.svg"}
+                      src={user.profileImage || ""}
                       alt="Profile"
                       className="h-full w-full object-cover"
                       onError={(e) => (e.currentTarget.src = "")}

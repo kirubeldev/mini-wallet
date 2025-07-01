@@ -466,7 +466,7 @@ export default function KYC() {
               {showReadOnlyFields ? (
                 <div className="mt-2">
                   <img
-                    src={formData.photoUrl || "/placeholder.svg"}
+                    src={formData.photoUrl || ""}
                     alt="ID Photo"
                     className="h-20 w-20 object-cover rounded-lg"
                   />
@@ -484,7 +484,7 @@ export default function KYC() {
                   {formData.photoUrl && (
                     <div className="mt-2">
                       <img
-                        src={formData.photoUrl || "/placeholder.svg"}
+                        src={formData.photoUrl || ""}
                         alt="Preview"
                         className="h-20 w-20 object-cover rounded-lg"
                         onError={(e) => {

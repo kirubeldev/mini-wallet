@@ -273,7 +273,7 @@ export default function Dashboard() {
                                       src={walletNames[transaction.toWallet].image!}
                                       alt={walletNames[transaction.toWallet].display}
                                       className="w-8 h-8 rounded-full object-cover"
-                                      onError={(e) => (e.currentTarget.src = "/placeholder.svg")}
+                                      onError={(e) => (e.currentTarget.src = "")}
                                     />
                                   ) : (
                                     <span className="text-sm font-medium">
