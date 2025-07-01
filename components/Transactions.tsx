@@ -18,9 +18,31 @@ import { truncateText } from "@/lib/utils";
 import Toast from "@/components/ui/Toast";
 import Skeleton from "react-loading-skeleton";
 import { useTransactions } from "@/hooks/UseTransactionHook";
+import axiosInstance from "@/lib/axios-Instance";
+
+interface User {
+  id: string;
+  firstname: string;
+  lastname: string;
+  email: string;
+  password: string;
+  currency: string;
+  theme: string;
+  profileImage: string;
+  kycStatus: "not-started" | "approved";
+  kycData: null | object;
+  token: string;
+  createdAt: string;
+}
+
+interface ExternalUser {
+  id: string;
+  name: string;
+  profileImage: string;
+}
 
 export default function Transactions() {
-  const router = useRouter();
+  const router = useRouter
   const { user } = useAuthStore();
   const userId = user?.id || null;
   const {
@@ -30,9 +52,6 @@ export default function Transactions() {
     senderWallets,
     senderWalletsError,
     isLoadingSenderWallets,
-    externalUsers,
-    usersError,
-    isLoadingUsers,
     receiverWallets,
     receiverWalletsError,
     isLoadingReceiverWallets,
@@ -70,8 +89,44 @@ export default function Transactions() {
     amount: "",
     reason: "",
   });
+  const [externalUsers, setExternalUsers] = useState<ExternalUser[]>([]);
+  const [usersError, setUsersError] = useState<string | null>(null);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(false);
 
   const itemsPerPage = 10;
+
+  // Fetch users using axios and useEffect
+  useEffect(() => {
+    const fetchUsers = async () => {
+      setIsLoadingUsers(true);
+      try {
+        const response = await axiosInstance.get("/users");
+        const data = response.data;
+        const users = Array.isArray(data) ? data : [data];
+        console.log("Fetched users:", users); // Debugging log
+        const filteredUsers = users
+          .filter((u: User) => u.id !== userId && u.kycStatus !== "not-started")
+          .map((u: User) => ({
+            id: u.id,
+            name: `${u.firstname || ""} ${u.lastname || ""}`.trim() || u.email,
+            profileImage: u.profileImage,
+          }));
+        console.log("External users:", filteredUsers); // Debugging log
+        setExternalUsers(filteredUsers);
+        setUsersError(null);
+      } catch (error: any) {
+        console.error("Error fetching users:", error);
+        setUsersError(error.message || "Failed to fetch users");
+        setExternalUsers([]);
+      } finally {
+        setIsLoadingUsers(false);
+      }
+    };
+
+    if (showUserSearchModal) {
+      fetchUsers();
+    }
+  }, [showUserSearchModal, userId]);
 
   const filteredTransactions = transactions
     .filter((transaction) => {
@@ -129,21 +184,7 @@ export default function Transactions() {
     }
   };
 
-  // Define the Transaction type if not imported from elsewhere
-  type Transaction = {
-    id: string;
-    fromWallet: string;
-    toWallet: string;
-    amount: number;
-    serviceCharge: number;
-    status: string;
-    type: string;
-    reason?: string;
-    timestamp: string;
-    [key: string]: any;
-  };
-
-  const getTypeIcon = (transaction: Transaction, userId: string | null) => {
+  const getTypeIcon = (transaction: any, userId: string | null) => {
     const fromWallet = senderWallets.find((w) => w.walletId === transaction.fromWallet);
     const toWallet =
       senderWallets.find((w) => w.walletId === transaction.toWallet) ||
@@ -290,7 +331,7 @@ export default function Transactions() {
     setUserSearchTerm("");
   };
 
-  if (isLoadingTransactions || isLoadingSenderWallets || isLoadingUsers) {
+  if (isLoadingTransactions || isLoadingSenderWallets) {
     return (
       <Layout>
         <div className="space-y-6 p-6">

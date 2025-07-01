@@ -5,21 +5,6 @@ import axiosInstance from "@/lib/axios-Instance";
 import { useAuthStore } from "@/store/AuthStore";
 import { v4 as uuidv4 } from "uuid";
 
-interface User {
-  id: string;
-  firstname: string;
-  lastname: string;
-  email: string;
-  password: string;
-  currency: string;
-  theme: string;
-  profileImage: string;
-  kycStatus: "not-started" | "approved";
-  kycData: null | object;
-  token: string;
-  createdAt: string;
-}
-
 interface Wallet {
   id: string;
   walletId: string;
@@ -44,28 +29,10 @@ interface Transaction {
   timestamp: string;
 }
 
-interface ExternalUser {
-  id: string;
-  name: string;
-  bankName: string;
-  profileImage: string;
-  kycStatus: string;
-}
-
 interface Toast {
   message: string;
   type: "success" | "error";
 }
-
-const fetcher = async (url: string) => {
-  try {
-    const response = await axiosInstance.get(url);
-    const data = response.data;
-    return Array.isArray(data) ? data : [data];
-  } catch (error: any) {
-    throw new Error("Failed to fetch data");
-  }
-};
 
 const fetchWalletsByUserId = async (url: string, { arg }: { arg: string }) => {
   try {
@@ -116,7 +83,7 @@ const transferFetcher = async (
   const { fromWallet, toWallet, amount, reason, userId, password, type = "transfer" } = arg;
 
   const userResponse = await axiosInstance.get(`/users/${userId}`);
-  const user = userResponse.data as User;
+  const user = userResponse.data;
   if (user.password !== password) {
     throw new Error("Incorrect password");
   }
@@ -184,14 +151,6 @@ export const useTransactions = () => {
   const [toast, setToast] = useState<Toast | null>(null);
 
   const {
-    data: users = [],
-    error: usersError,
-    isLoading: isLoadingUsers,
-  } = useSWR<User[]>("/users", fetcher);
-
-  console.log("Fetched users:", users);
-
-  const {
     data: senderWallets = [],
     error: senderWalletsError,
     isLoading: isLoadingSenderWallets,
@@ -247,16 +206,6 @@ export const useTransactions = () => {
     }
   );
 
-  const externalUsers = users
-    .filter((u) => u.id !== userId && u.kycStatus !== "not-started")
-    .map((u) => ({
-      id: u.id,
-      name: `${u.firstname || ""} ${u.lastname || ""}`.trim() || u.email,
-      profileImage: u.profileImage,
-    }));
-
-  console.log("External users:", externalUsers);
-
   const mutateAll = useCallback(async () => {
     await Promise.all([mutateSenderWallets(), mutateReceiverWallets(), mutateTransactions()]);
   }, [mutateSenderWallets, mutateReceiverWallets, mutateTransactions]);
@@ -268,9 +217,6 @@ export const useTransactions = () => {
     senderWallets,
     senderWalletsError: senderWalletsError?.message,
     isLoadingSenderWallets,
-    externalUsers,
-    usersError: usersError?.message,
-    isLoadingUsers,
     receiverWallets,
     receiverWalletsError: receiverWalletsError?.message,
     isLoadingReceiverWallets,
